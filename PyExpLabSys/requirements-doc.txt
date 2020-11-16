@@ -1,0 +1,11 @@
+chainmap
+crc16
+pyyaml
+sphinx
+sphinxcontrib-napoleon
+pyserial
+evdev
+minimalmodbus
+MySQL-python
+smbus-cffi
+unicodecsv

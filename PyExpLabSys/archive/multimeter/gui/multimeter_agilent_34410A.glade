@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <requires lib="gtk+" version="2.24"/>
+  <!-- interface-naming-policy toplevel-contextual -->
+  <object class="GtkAdjustment" id="adjustment_interval">
+    <property name="upper">3600000</property>
+    <property name="value">100</property>
+    <property name="step_increment">10</property>
+    <property name="page_increment">100</property>
+  </object>
+  <object class="GtkAdjustment" id="adjustment_points">
+    <property name="lower">2</property>
+    <property name="upper">100000</property>
+    <property name="value">100</property>
+    <property name="step_increment">10</property>
+    <property name="page_increment">100</property>
+  </object>
+  <object class="GtkListStore" id="liststore_integration_time">
+    <columns>
+      <!-- column-name gchararrayintegrationtime -->
+      <column type="gchararray"/>
+      <!-- column-name gfloatintegrationtime -->
+      <column type="gfloat"/>
+      <!-- column-name gchararrayvalue -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">0.006 NPLC</col>
+        <col id="1">0.0060000000521540642</col>
+        <col id="2" translatable="yes">0.006</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">0.02 NPLC</col>
+        <col id="1">0.019999999552965164</col>
+        <col id="2" translatable="yes">0.02</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">0.06 NPLC</col>
+        <col id="1">0.059999998658895493</col>
+        <col id="2" translatable="yes">0.06</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">0.2 NPLC</col>
+        <col id="1">0.20000000298023224</col>
+        <col id="2" translatable="yes">0.2</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">1 NPLC</col>
+        <col id="1">1</col>
+        <col id="2" translatable="yes">1</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">2 NPLC</col>
+        <col id="1">2</col>
+        <col id="2" translatable="yes">2</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">10 NPLC</col>
+        <col id="1">10</col>
+        <col id="2" translatable="yes">10</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">100 NPLC</col>
+        <col id="1">100</col>
+        <col id="2" translatable="yes">100</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="liststore_internal_res">
+    <columns>
+      <!-- column-name gchararrayinternalres -->
+      <column type="gchararray"/>
+      <!-- column-name gboolean1internalresvalue -->
+      <column type="gboolean"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Input Impedance LOW</col>
+        <col id="1">False</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Input Impedance AUTO HIGH</col>
+        <col id="1">True</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="liststore_points">
+    <columns>
+      <!-- column-name gchararraypoints -->
+      <column type="gchararray"/>
+      <!-- column-name gintpoints -->
+      <column type="gint"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">10 points</col>
+        <col id="1">10</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">20 points</col>
+        <col id="1">20</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">50 points</col>
+        <col id="1">50</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">100 points</col>
+        <col id="1">100</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkListStore" id="liststore_types">
+    <columns>
+      <!-- column-name gchararraytype -->
+      <column type="gchararray"/>
+      <!-- column-name gchararraytypename -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">Bias [V]</col>
+        <col id="1" translatable="yes">VOLTAGE</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Current [A]</col>
+        <col id="1" translatable="yes">CURRENT</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">Resistance [Ohm]</col>
+        <col id="1" translatable="yes">RESISTANCE</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkWindow" id="window1">
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">X mouse click difference</property>
+    <property name="window_position">center</property>
+    <property name="default_width">800</property>
+    <property name="default_height">400</property>
+    <signal name="destroy" handler="on_window_destroy" swapped="no"/>
+    <child>
+      <object class="GtkHBox" id="hbox1">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <object class="GtkVBox" id="vbox1">
+            <property name="width_request">300</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkToggleButton" id="toggle_update">
+                <property name="label" translatable="yes">Measure</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_action_appearance">False</property>
+                <property name="xalign">0</property>
+                <signal name="toggled" handler="set_update" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label_measurement">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">N/A</property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                  <attribute name="size" value="20000"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="combobox_type">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">liststore_types</property>
+                <property name="active">0</property>
+                <signal name="changed" handler="on_combobox_type_changed" swapped="no"/>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext_type"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="combobox_internal_res">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">liststore_internal_res</property>
+                <property name="active">0</property>
+                <signal name="changed" handler="on_combobox_internal_res_changed" swapped="no"/>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext_internal_res"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="combobox_range">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkComboBox" id="combobox_integration_time">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">liststore_integration_time</property>
+                <property name="active">0</property>
+                <signal name="changed" handler="on_combobox_integration_time_changed" swapped="no"/>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext_integration_time"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">5</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">6</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkHBox" id="hbox4">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkLabel" id="label_format">
+                    <property name="width_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0.05000000074505806</property>
+                    <property name="label" translatable="yes">Number format:</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="entry_format">
+                    <property name="width_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="tooltip_text" translatable="yes">Number format for the display. Must be in a format recognized by the format function. Most commonly use:
+
+.[number of digits][f for float and e for exponential]
+e.g.:
+.4f or .2e</property>
+                    <property name="invisible_char">•</property>
+                    <property name="text" translatable="yes">.2f</property>
+                    <property name="primary_icon_activatable">False</property>
+                    <property name="secondary_icon_activatable">False</property>
+                    <property name="primary_icon_sensitive">True</property>
+                    <property name="secondary_icon_sensitive">True</property>
+                    <signal name="changed" handler="on_entry_format_changed" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">7</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkHBox" id="hbox2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkLabel" id="label_interval">
+                    <property name="width_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0.05000000074505806</property>
+                    <property name="label" translatable="yes">Update interval [ms]:</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSpinButton" id="spinbutton_interval">
+                    <property name="width_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="invisible_char">•</property>
+                    <property name="primary_icon_activatable">False</property>
+                    <property name="secondary_icon_activatable">False</property>
+                    <property name="primary_icon_sensitive">True</property>
+                    <property name="secondary_icon_sensitive">True</property>
+                    <property name="adjustment">adjustment_interval</property>
+                    <signal name="value-changed" handler="set_update" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">8</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkHBox" id="hbox3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkLabel" id="label_points">
+                    <property name="width_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0.05000000074505806</property>
+                    <property name="label" translatable="yes">Points in graph:</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSpinButton" id="spinbutton_points">
+                    <property name="width_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="invisible_char">•</property>
+                    <property name="primary_icon_activatable">False</property>
+                    <property name="secondary_icon_activatable">False</property>
+                    <property name="primary_icon_sensitive">True</property>
+                    <property name="secondary_icon_sensitive">True</property>
+                    <property name="adjustment">adjustment_points</property>
+                    <signal name="value-changed" handler="on_spinbutton_points_value_changed" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">9</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

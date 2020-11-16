@@ -1,0 +1,6 @@
+#!/bin/sh
+ 
+#echo "======  pyflakes  ======"
+#pyflakes $1
+#echo "======  pylint  ======"
+pylint --reports=n --output-format=parseable $1
