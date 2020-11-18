@@ -1418,7 +1418,7 @@ class CA(Technique):
     }
 
     def __init__(self, voltage_step=(0.35,), vs_initial=(False,),
-                 duration_step=(10.0,),
+                 duration_step=(100.0,),
                  record_every_dT=0.1, record_every_dI=5E-6,
                  N_cycles=0, I_range='KBIO_IRANGE_AUTO',
                  E_range='KBIO_ERANGE_2_5', bandwidth='KBIO_BW_5'):
