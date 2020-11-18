@@ -355,7 +355,7 @@ def sequence_builder(protocol):
     return [cp1_, ca1_, cp2_, ca2_, cp3_, ca3_, speis, cp4_, speis]
 
 
-def cycle_cell(potentiostat, channel, protocol, file):
+def cycle_cell(potentiostat, channel, protocol):
     """
     Option A action space
     :param potentiostat: the potentiostat to connect to
@@ -377,7 +377,7 @@ def cycle_cell(potentiostat, channel, protocol, file):
         else:
             potentiostat.load_technique(channel, technique, False, False)
 
-    # Start channel!
+    # Start channel! i.e. charge potentiostat, measure EIS, discharge, remeasure EIS.
     potentiostat.start_channel(channel)
     ew_ = []
     ii_ = []
@@ -385,6 +385,17 @@ def cycle_cell(potentiostat, channel, protocol, file):
         while True:
             time.sleep(0.1)
             data_out = potentiostat.get_data(channel)
+
+            # TODO: extract time to charge (time at which the current drops to less than a specified threshold value)
+            #       this will be an input to the reward function (need to write this function - i.e. given the time and capacity reduction what is the threshold)
+            #       also need to extract the capacity reduction (both cycle to cycle and reduction from the start -
+            #       so need to store both the last capacity and the initial capacity)
+            #       also need to write function to compute the new state from a) the discharge curve - second derivative / change from cycle to cycle ?!
+            #       and b) the EIS curve after discharge - look at Yunwei data - see if 5 PCA components captures enough information about spectrum and use that??
+            #       i.e. after dimensionality reduction can use the EIS features.
+            #       Then incorporate the RL algorithm here - lots of github code online...
+            
+
             if data_out is None:
                 break
             print(data_out.technique)
@@ -400,17 +411,6 @@ def cycle_cell(potentiostat, channel, protocol, file):
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
     print('end')
-
-    time.sleep(0.1)
-
-    while True:
-        # Get currently available data on specified channel
-        data_out = mpg2.get_data(channel)
-
-        if data_out is None:
-            break
-
-    mpg2.stop_channel(channel)
 
 
 if __name__ == '__main__':
