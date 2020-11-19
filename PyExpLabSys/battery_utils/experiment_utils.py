@@ -10,27 +10,23 @@ from PyExpLabSys.battery_utils.potentiostats import MPG2
 
 import pdb
 
-
 # Build charging protocol
 def sequence_builder(protocol):
     v_max = 4.2
     v_min = 1.0
-    i_discharge = -0.1
 
     # Set up the charging protocol
     cp1_ = CPLimit(current_step=(protocol[0],), test1_value=(protocol[1],),
-                   test2_value=(v_min,))
+                   test2_value=(v_min - 0.1,))
     ca1_ = CA(voltage_step=(protocol[1],), duration_step=(protocol[2],))
     cp2_ = CPLimit(current_step=(protocol[3],), test1_value=(protocol[4],),
-                   test2_value=(v_min,))
+                   test2_value=(v_min - 0.1,))
     ca2_ = CA(voltage_step=(protocol[4],), duration_step=(protocol[5],))
     cp3_ = CPLimit(current_step=(protocol[6],), test1_value=(v_max,),
-                   test2_value=(v_min,))
+                   test2_value=(v_min - 0.1,))
     ca3_ = CA(voltage_step=(v_max,), duration_step=(1000.0,))
 
     return [cp1_, ca1_, cp2_, ca2_, cp3_, ca3_]
-
-
 
 def cycle_cell(potentiostat, channel, protocol):
     """
@@ -43,18 +39,51 @@ def cycle_cell(potentiostat, channel, protocol):
 
     # Stage 1: Charge the cell and measure the time taken to charge and the capacity of the cell.
     # TODO: Add ability to save the data from this process - write to file. Do for all stages
-    t_charge, capacity = charge_cell(potentiostat, channel, protocol)
+    t_charge, current_capacity = charge_cell(potentiostat, channel, protocol)
 
     # Stage 2: Record the EIS spectrum (galvanostatic) and extract the relevant parameters.
+    re_z_charge, im_z_charge = measure_eis(potentiostat, channel)
 
-    # Stage 3: Discharge the cell at a constant prespecified C rate
-
+    # Stage 3: Discharge the cell at a constant pre-specified C rate and extract relevant parameters
+    discharge_features = discharge_cell(potentiostat, channel)
 
     # Stage 4: Record the EIS spectrum and extract relevant parameters. Write to file as well.
     # TODO: PCA for extracting parameters.
+    re_z_discharge, im_z_discharge = measure_eis(potentiostat, channel)
+
+    # Stage 5: Compute the reward received in this cycle
+    reward = reward_function(t_charge, current_capacity, previous_capacity, initial_capacity, cycle_number)
+
+    # Stage 6: Calculate the new state from the discharge curve features and the EIS spectrum after discharge
+    # TODO: Write the state function!
+    state = state_function(discharge_features, re_z_discharge, im_z_discharge)
+
+    # Stage 6: Compute the next charging protocol
+    # TODO: Write the actor function! Interweave with DDPG now.
+    new_protocol = actor_function(state)
+
+    # Stage 7: Compute the action-value function and evaluate the loss.
 
 
+def reward_function(t_charge, current_capacity, previous_capacity, initial_capacity, cycle_number):
+    A = 1
+    B = 1
+    extra_penalty = -100.0
+    threshold = 0.8
+    min_n_cycles = 10
 
+    fast_charge_reward = 1 / t_charge
+    degradation_penalty = (current_capacity - previous_capacity) / initial_capacity
+
+    reward = fast_charge_reward + degradation_penalty
+
+    if current_capacity / initial_capacity < threshold:
+        if cycle_number > min_n_cycles:
+            reward += 0
+        if cycle_number < min_n_cycles:
+            reward += extra_penalty
+
+    return reward
 
 
 # TODO: extract time to charge (time at which the current drops to less than a specified threshold value)
@@ -66,9 +95,11 @@ def cycle_cell(potentiostat, channel, protocol):
 #       i.e. after dimensionality reduction can use the EIS features.
 #       Then incorporate the RL algorithm here - lots of github code online...
 
+
+
 def measure_eis(potentiostat, channel):
     """
-    Measure the EIS Sspectrum on a specific channel
+    Measure the EIS Spectrum on a specific channel
     :param potentiostat:
     :param channel:
     :return:
@@ -108,6 +139,8 @@ def measure_eis(potentiostat, channel):
             time.sleep(delta_t)
 
             data_out = potentiostat.get_data(channel)
+
+            # Stop when complete spectrum measured
             if data_out is None:
                 break
 
@@ -133,12 +166,72 @@ def measure_eis(potentiostat, channel):
                 print('Ece', data_out.Ece)
                 print('step', data_out.step)
 
+                # TODO: It is something along the lines of....
+                Modulo_Z = data_out.abs_Ewe_numpy / data_out.abs_I_numpy
+                Phase_Z = (2*numpy.pi()/180)*data_out.Phase_Zwe_numpy
+                Re_Z = Modulo_Z * numpy.cos(Phase_Z)
+                Im_Z = Modulo_Z * numpy.sin(Phase_Z)
+
+                return Re_Z, Im_Z
+
     except KeyboardInterrupt:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
     else:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
+
+
+def discharge_cell(potentiostat, channel):
+    i_discharge = -0.1
+    v_max = 4.2
+    v_min = 1.0
+    delta_t = 0.1
+
+    # Connect to potentiostat
+    potentiostat.connect()
+
+    # Set up measurement of EIS spectrum when fully charged
+    # TODO: Choose these parameters
+    technique = CPLimit(current_step=(i_discharge,), test1_value=(v_max + 0.1,),
+                        test2_value=(v_min,))
+
+    # Load techniques onto channel
+    potentiostat.load_technique(channel, technique, True, True)
+
+    # Start channel! Discharge the cell
+    potentiostat.start_channel(channel)
+
+    ew_ = []
+    ii_ = []
+    ts_ = []
+
+    try:
+        while True:
+            # Every delta_t seconds we get data from the channel
+            time.sleep(delta_t)
+
+            data_out = potentiostat.get_data(channel)
+
+            # Stop when the cell is fully discharged (to the minimum potential)
+            if data_out is None:
+                break
+
+            ew_ += data_out.Ewe
+            ii_ += data_out.I
+            ts_ += data_out.time
+
+    except KeyboardInterrupt:
+        potentiostat.stop_channel(channel)
+        potentiostat.disconnect()
+    else:
+        potentiostat.stop_channel(channel)
+        potentiostat.disconnect()
+
+    observation = extract_features(ew_, ii_, ts_)
+
+    return observation
+
 
 def charge_cell(potentiostat, channel, protocol):
     """
