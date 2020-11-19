@@ -1,301 +1,118 @@
 from __future__ import print_function
+from pprint import pprint
 import time
 
 import numpy
+from scipy import integrate
 
-from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, CA
+from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, CA, GEIS, CPLimit
 from PyExpLabSys.battery_utils.potentiostats import MPG2
-from PyExpLabSys.battery_utils.techniques import ModularPulse, CPLimit
 
-def run_ocv(channel):
+import pdb
+
+
+# Build charging protocol
+def sequence_builder(protocol):
+    v_max = 4.2
+    v_min = 1.0
+    i_discharge = -0.1
+
+    # Set up the charging protocol
+    cp1_ = CPLimit(current_step=(protocol[0],), test1_value=(protocol[1],),
+                   test2_value=(v_min,))
+    ca1_ = CA(voltage_step=(protocol[1],), duration_step=(protocol[2],))
+    cp2_ = CPLimit(current_step=(protocol[3],), test1_value=(protocol[4],),
+                   test2_value=(v_min,))
+    ca2_ = CA(voltage_step=(protocol[4],), duration_step=(protocol[5],))
+    cp3_ = CPLimit(current_step=(protocol[6],), test1_value=(v_max,),
+                   test2_value=(v_min,))
+    ca3_ = CA(voltage_step=(v_max,), duration_step=(1000.0,))
+
+    return [cp1_, ca1_, cp2_, ca2_, cp3_, ca3_]
+
+
+
+def cycle_cell(potentiostat, channel, protocol):
     """
-    Test technique - find out the IP address of Forse group
+
+    :param potentiostat: the potentiostat to connect to
+    :param channel: (int) channel to load techniques onto
+    :param protocol: (array) [i0, v0, t0, i1, v1, t1, i2]
     :return:
     """
-    ip_address = '192.168.0.257'
+
+    # Stage 1: Charge the cell and measure the time taken to charge and the capacity of the cell.
+    # TODO: Add ability to save the data from this process - write to file. Do for all stages
+    t_charge, capacity = charge_cell(potentiostat, channel, protocol)
+
+    # Stage 2: Record the EIS spectrum (galvanostatic) and extract the relevant parameters.
+
+    # Stage 3: Discharge the cell at a constant prespecified C rate
+
+
+    # Stage 4: Record the EIS spectrum and extract relevant parameters. Write to file as well.
+    # TODO: PCA for extracting parameters.
+
+
+
+
+
+# TODO: extract time to charge (time at which the current drops to less than a specified threshold value)
+#       this will be an input to the reward function (need to write this function - i.e. given the time and capacity reduction what is the threshold)
+#       also need to extract the capacity reduction (both cycle to cycle and reduction from the start -
+#       so need to store both the last capacity and the initial capacity)
+#       also need to write function to compute the new state from a) the discharge curve - second derivative / change from cycle to cycle ?!
+#       and b) the EIS curve after discharge - look at Yunwei data - see if 5 PCA components captures enough information about spectrum and use that??
+#       i.e. after dimensionality reduction can use the EIS features.
+#       Then incorporate the RL algorithm here - lots of github code online...
+
+def measure_eis(potentiostat, channel):
+    """
+    Measure the EIS Sspectrum on a specific channel
+    :param potentiostat:
+    :param channel:
+    :return:
+    """
+
+    # TODO: Choose these parameters
+    delta_t = 2
+    initial_frequency = 2.0e-2
+    final_frequency = 20.0e3
+    frequency_number = 60
 
     # Connect to potentiostat
-    mpg2 = MPG2(ip_address)
-    mpg2.connect()
-
-    # Instantiate the technique. In this case, run OCV as a test
-    technique = OCV(rest_time_T=0.2, record_every_dE=10.0, record_every_dT=0.01)
-
-    # Load the technique onto desired channel of the potentiostat, and then start it
-    mpg2.load_technique(channel, technique)
-    mpg2.start_channel(channel)
-
-    time.sleep(0.1)
-
-    while True:
-        # Get currently available data on specified channel
-        data_out = mpg2.get_data(channel)
-
-        if data_out is None:
-            break
-
-    mpg2.stop_channel(channel)
-
-
-
-
-
-"""Integration tests for the biologic SP-150 driver"""
-
-from __future__ import print_function
-from pprint import pprint
-import time
-from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CP, CA, CV, CVA, SPEIS
-from PyExpLabSys.battery_utils.potentiostats import MPG2
-
-
-def basic(potentiostat):
-    """ Main method for tests """
-    print('## Device info before connect:', potentiostat.device_info)
-
-    print('\n## Lib version:', potentiostat.get_lib_version())
-    dev_info = potentiostat.connect()
-    print('\n## Connect returned device info:')
-    pprint(dev_info)
-
-    # Information about whether the channels are plugged
-    channels = potentiostat.get_channels_plugged()
-    print('\n## Channels plugged:', channels)
-    for index in range(10):
-        print('Channel {} plugged:'.format(index),
-              potentiostat.is_channel_plugged(index))
-
-    print('\n## Device info:')
-    pprint(potentiostat.device_info)
-
-    channel_info = potentiostat.get_channel_infos(0)
-    print('\n## Channel 0 info')
-    pprint(channel_info)
-
-    print('\n## Load_firmware:', potentiostat.load_firmware(channels))
-
-    print('\n## Message left in the queue:')
-    while True:
-        msg = potentiostat.get_message(0)
-        if msg == '':
-            break
-        print(msg)
-
-    potentiostat.disconnect()
-    print('\n## Disconnect and test done')
-
-
-def current_values(potentiostat, channel):
-    """Test the current values method"""
     potentiostat.connect()
-    current_values_ = potentiostat.get_current_values(channel)
-    pprint(current_values_)
-    potentiostat.disconnect()
 
+    # Set up measurement of EIS spectrum when fully charged
+    # TODO: Choose these parameters
+    technique = GEIS(vs_initial=False, vs_final=False, initial_current_step=0.1,
+                     final_current_step=0.1,
+                     duration_step=1.0,
+                     step_number=3,
+                     final_frequency=final_frequency,
+                     initial_frequency=initial_frequency,
+                     frequency_number=frequency_number,
+                     sweep=False,
+                     average_n_times=2,
+                     I_range='KBIO_IRANGE_1mA')
 
-def mess_with_techniques(potentiostat, channel=0):
-    """Test adding techniques"""
-    potentiostat.connect()
-    ocv = OCV(rest_time_T=0.3,
-              record_every_dE=10.0,
-              record_every_dT=0.01)
-    potentiostat.load_technique(channel, ocv, False, False)
-    potentiostat.load_technique(channel, ocv, True, True)
-    #potentiostat.load_technique(0, ocv, False, True)
-    print(potentiostat.get_channel_infos(channel)['NbOfTechniques'])
-    potentiostat.disconnect()
+    # Load techniques onto channel
+    potentiostat.load_technique(channel, technique, True, True)
 
-
-def test_ocv_technique(potentiostat, channel):
-    """Test the OCV technique"""
-    potentiostat.connect()
-    ocv = OCV(rest_time_T=0.2,
-              record_every_dE=10.0,
-              record_every_dT=0.01)
-    potentiostat.load_technique(channel, ocv)
-    potentiostat.start_channel(channel)
-    try:
-        time.sleep(0.1)
-        while True:
-            data_out = potentiostat.get_data(channel)
-            if data_out is None:
-                break
-            print(data_out.Ewe)
-            print(data_out.Ewe_numpy)
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    else:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-
-
-def test_cp_technique(potentiostat, channel):
-    """Test the CP technique"""
-    potentiostat.connect()
-    cp_ = CP(current_step=(-1E-6, -10E-6, -100E-6),
-             vs_initial=(False, False, False),
-             duration_step=(2.0, 2.0, 2.0),
-             record_every_dE=1.0,
-             record_every_dT=1.0)
-    potentiostat.load_technique(channel, cp_)
-    #potentiostat.disconnect()
-    #return
-
-    potentiostat.start_channel(channel)
-    try:
-        while True:
-            time.sleep(2)
-            data_out = potentiostat.get_data(channel)
-            if data_out is None:
-                break
-            #print(data_out.Ewe)
-            print(data_out.I_numpy)
-            print('NP:', data_out.cycle_numpy)
-    except KeyboardInterrupt:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    else:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-
-
-def test_ca_technique(potentiostat):
-    """Test the CA technique"""
-    potentiostat.connect()
-    ca_ = CA(voltage_step=(0.01, 0.02, 0.03),
-             vs_initial=(False, False, False),
-             duration_step=(5.0, 5.0, 5.0),
-             record_every_dI=1.0,
-             record_every_dT=0.1)
-    potentiostat.load_technique(0, ca_)
-    #potentiostat.disconnect()
-    #return
-
-    potentiostat.start_channel(0)
-    try:
-        while True:
-            time.sleep(5)
-            data_out = potentiostat.get_data(0)
-            if data_out is None:
-                break
-            print(data_out.technique)
-            print('Ewe:', data_out.Ewe)
-            print('I:', data_out.I)
-            print('cycle:', data_out.cycle)
-    except KeyboardInterrupt:
-        potentiostat.stop_channel(0)
-        potentiostat.disconnect()
-    else:
-        potentiostat.stop_channel(0)
-        potentiostat.disconnect()
-
-
-def test_cv_technique(potentiostat, channel):
-    """Test the CV technique"""
-    import matplotlib.pyplot as plt
-    potentiostat.connect()
-    cv_ = CV(vs_initial=(True,) * 5,
-             voltage_step=(0.0, 0.5, -0.7, 0.0, 0.0),
-             scan_rate=(10.0,) * 5,
-             record_every_dE=0.01,
-             N_cycles=3)
-    potentiostat.load_technique(channel, cv_)
-
-    potentiostat.start_channel(channel)
-    ew_ = []
-    ii_ = []
-    try:
-        while True:
-            time.sleep(0.1)
-            data_out = potentiostat.get_data(channel)
-            if data_out is None:
-                break
-            print(data_out.technique)
-            print('Ewe:', data_out.Ewe)
-            print('I:', data_out.I)
-            ew_ += data_out.Ewe
-            ii_ += data_out.I
-            print('cycle:', data_out.cycle)
-    except KeyboardInterrupt:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    else:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    plt.plot(ew_, ii_)
-    plt.show()
-    print('end')
-
-
-def test_cva_technique(potentiostat, channel):
-    """Test the CVA technique"""
-    import matplotlib.pyplot as plt
-    potentiostat.connect()
-    print('kk')
-    cva = CVA(
-        vs_initial_scan=(False,) * 4,
-        voltage_scan=(0.0, 0.2, -0.2, 0.0),
-        scan_rate=(50.0,) * 4,
-        vs_initial_step=(False,) * 2,
-        voltage_step=(0.1,) * 2,
-        duration_step=(1.0,) * 2,
-    )
-    potentiostat.load_technique(channel, cva)
-
-    potentiostat.start_channel(channel)
-    ew_ = []
-    ii_ = []
-    try:
-        while True:
-            time.sleep(0.1)
-            data_out = potentiostat.get_data(channel)
-            if data_out is None:
-                break
-            print(data_out.technique)
-            print('time:', data_out.time,
-                  'numpy', data_out.time_numpy, data_out.time_numpy.dtype)
-            print('I:', data_out.I)
-            print('Ec:', data_out.Ec)
-            print('Ewe:', data_out.Ewe)
-            print('Cycle:', data_out.cycle,
-                  'numpy', data_out.cycle_numpy, data_out.cycle_numpy.dtype)
-            ew_ += data_out.Ewe
-            ii_ += data_out.I
-    except KeyboardInterrupt:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    else:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    plt.plot(ew_, ii_)
-    plt.show()
-    print('end')
-
-
-def test_speis_technique(potentiostat, channel):
-    """Test the SPEIS technique"""
-    potentiostat.connect()
-    print('kk')
-    speis = SPEIS(
-        vs_initial=False, vs_final=False,
-        initial_voltage_step=0.1,
-        final_voltage_step=0.2,
-        duration_step=1.0,
-        step_number=3,
-        final_frequency=100.0E3, initial_frequency=10.0E3,
-        I_range='KBIO_IRANGE_1mA'
-    )
-    potentiostat.load_technique(channel, speis)
+    # Start channel! Measure the EIS.
     potentiostat.start_channel(channel)
 
     try:
         while True:
-            time.sleep(0.1)
+            # Every delta_t seconds we get data from the channel
+            time.sleep(delta_t)
+
             data_out = potentiostat.get_data(channel)
             if data_out is None:
                 break
+
+            # TODO: Need to ascertain what this data looks like... how to process it to extract relevant features
+
             print('Technique', data_out.technique)
             print('Process index', data_out.process)
             if data_out.process == 0:
@@ -314,48 +131,16 @@ def test_speis_technique(potentiostat, channel):
                 print('abs_Ice', data_out.abs_Ice)
                 print('Phase_Zce', data_out.Phase_Zce)
                 print('Ece', data_out.Ece)
-                print('t', data_out.t)
-                print('Irange', data_out.Irange)
                 print('step', data_out.step)
+
     except KeyboardInterrupt:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
     else:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
-    print('end')
 
-def sequence_builder(protocol):
-    v_max = 4.2
-    v_min = 1.0
-    i_discharge = -0.1
-
-    # Set up the charging protocol and load techniques
-    cp1_ = CPLimit(current_step=(protocol[0],), test1_value=(protocol[1],),
-                   test2_value=(v_min,))
-    ca1_ = CA(voltage_step=(protocol[1],), duration_step=(protocol[2],))
-    cp2_ = CPLimit(current_step=(protocol[3],), test1_value=(protocol[4],),
-                   test2_value=(v_min,))
-    ca2_ = CA(voltage_step=(protocol[4],), duration_step=(protocol[5],))
-    cp3_ = CPLimit(current_step=(protocol[6],), test1_value=(v_max,),
-                   test2_value=(v_min,))
-    ca3_ = CA(voltage_step=(v_max,), duration_step=(1000.0,))
-
-    # Set up measurement of EIS spectrum when fully charged
-    speis = SPEIS(vs_initial=False, vs_final=False,
-                  initial_voltage_step=0.1, final_voltage_step=0.2,
-                  duration_step=1.0, step_number=3,
-                  final_frequency=100.0E3, initial_frequency=10.0E3,
-                  I_range='KBIO_IRANGE_1mA')
-
-    # Set up discharging protocol and load technique
-    cp4_ = CPLimit(current_step=(i_discharge,), test1_value=(v_max + 0.1),
-                   duration_step=(20000,), test2_value=(v_min,))
-
-    return [cp1_, ca1_, cp2_, ca2_, cp3_, ca3_, speis, cp4_, speis]
-
-
-def cycle_cell(potentiostat, channel, protocol):
+def charge_cell(potentiostat, channel, protocol):
     """
     Option A action space
     :param potentiostat: the potentiostat to connect to
@@ -363,6 +148,10 @@ def cycle_cell(potentiostat, channel, protocol):
     :param protocol: (array) [i0, v0, t0, i1, v1, t1, i2]
     :return:
     """
+    # TODO: Decide these parameters
+    i_threshold = 1.0e-4
+    delta_t = 0.1
+
     potentiostat.connect()
 
     # Build sequence of techniques based on protocol
@@ -379,38 +168,43 @@ def cycle_cell(potentiostat, channel, protocol):
 
     # Start channel! i.e. charge potentiostat, measure EIS, discharge, remeasure EIS.
     potentiostat.start_channel(channel)
-    ew_ = []
-    ii_ = []
+
     try:
         while True:
-            time.sleep(0.1)
+            # Every delta_t seconds we get data from the channel
+            time.sleep(delta_t)
             data_out = potentiostat.get_data(channel)
+            data_current = potentiostat.get_current_values(channel)
 
-            # TODO: extract time to charge (time at which the current drops to less than a specified threshold value)
-            #       this will be an input to the reward function (need to write this function - i.e. given the time and capacity reduction what is the threshold)
-            #       also need to extract the capacity reduction (both cycle to cycle and reduction from the start -
-            #       so need to store both the last capacity and the initial capacity)
-            #       also need to write function to compute the new state from a) the discharge curve - second derivative / change from cycle to cycle ?!
-            #       and b) the EIS curve after discharge - look at Yunwei data - see if 5 PCA components captures enough information about spectrum and use that??
-            #       i.e. after dimensionality reduction can use the EIS features.
-            #       Then incorporate the RL algorithm here - lots of github code online...
-            
+            technique_index = data_out.technique_index
+            # FIXME: Could also be data_current.I - probably need to debug
+            i_current = data_current['I']
+            t_elapsed = data_current['ElapsedTime']
 
-            if data_out is None:
-                break
-            print(data_out.technique)
-            print('Ewe:', data_out.Ewe)
-            print('I:', data_out.I)
-            ew_ += data_out.Ewe
-            ii_ += data_out.I
-            print('cycle:', data_out.cycle)
+            # The battery is charged if at the final stage of charging (technique 5 - 0-based indexing) the current dips below the prespecified
+            # current threshold i_threshold
+            if (technique_index == 5) and (i_current < i_threshold):
+                # Pause channel
+                potentiostat.stop_channel(channel)
+
+                t_charge = t_elapsed
+
+                # Now compute the charge stored in that time, and use to compute the amount of capacity reduction
+                # FIXME: Might also be the case that this is not an array but a single value - need to check this
+                #       In that case would need to set up a loop for adding current values to array at each time step
+                times = data_out.time_numpy
+                currents = data_out.I_numpy
+                charges = integrate.cumtrapz(currents, times, initial=0)
+
+                capacity = charges[-1]
+
+                potentiostat.disconnect()
+
+                return t_charge, capacity
+
     except KeyboardInterrupt:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
-    else:
-        potentiostat.stop_channel(channel)
-        potentiostat.disconnect()
-    print('end')
 
 
 if __name__ == '__main__':

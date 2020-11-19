@@ -653,6 +653,7 @@ class KBIOData(object):
 
         """
         technique_id = c_data_infos.TechniqueID
+        self.technique_index = c_data_infos.TechniqueIndex
         self.technique = TECHNIQUE_IDENTIFIERS[technique_id]
 
         # Technique 0 means no data, get_data checks for this, so just return
@@ -1477,6 +1478,307 @@ class CA(Technique):
         )
         super(CA, self).__init__(args, 'ca.ecc')
 
+# Section 7.36 in the specification
+# TODO: Check
+class CPLimit(Technique):
+    """Chrono-Potentiometry (CP) technique class, with limits.
+
+    The CP technique returns data on fields (in order):
+
+    * time (float)
+    * Ewe (float)
+    * I (float)
+    * cycle (int)
+    """
+
+    #: Data fields definition
+    data_fields = {
+        'common': [
+            DataField('Ec', c_float),
+            DataField('Ewe', c_float),
+            DataField('I', c_float),
+            DataField('cycle', c_uint32),
+        ]
+    }
+
+    def __init__(self, current_step=(50E-6,), vs_initial=(False,),
+                 duration_step=(10000,), record_every_dT=0.1, record_every_dE=0.001,
+                 N_cycles=0, test1_config=(1,), test1_value=(3.0,),
+                 test2_config=(5,), test2_value=(1.0,)):
+        """Initialize the CP technique
+
+        The first test is E < test1_value
+        The second test is E > test2_value
+
+        NOTE: The current_step, vs_initial and duration_step must be a list or
+        tuple with the same length.
+
+        Args:
+            current_step (list): List (or tuple) of floats indicating the
+                current steps (A). See NOTE above.
+            vs_initial (list): List (or tuple) of booleans indicating whether
+                the current steps is vs. the initial one. See NOTE above.
+            duration_step (list): List (or tuple) of floats indicating the
+                duration of each step (s). See NOTE above.
+            record_every_dT (float): Record every dT (s)
+            record_every_dE (float): Record every dE (V)
+            N_cycles (int): The number of times the technique is REPEATED.
+                NOTE: This means that the default value is 0 which means that
+                the technique will be run once.
+
+        Raises:
+            ValueError: On bad lengths for the list arguments
+        """
+        if not len(current_step) == len(vs_initial) == len(duration_step) == len(test1_value):
+            message = 'The length of current_step, vs_initial and '\
+                      'duration_step must be the same'
+            raise ValueError(message)
+
+        args = (
+            TechniqueArgument('Current_step', '[single]', current_step,
+                              None, None),
+            TechniqueArgument('vs_initial', '[bool]', vs_initial,
+                              'in', [True, False]),
+            TechniqueArgument('Duration_step', '[single]', duration_step,
+                              '>=', 0),
+            TechniqueArgument('Step_number', 'integer', len(current_step),
+                              'in', range(99)),
+            TechniqueArgument('Record_every_dT', 'single', record_every_dT,
+                              '>=', 0),
+            TechniqueArgument('Record_every_dE', 'single', record_every_dE,
+                              '>=', 0),
+            TechniqueArgument('N_Cycles', 'integer', N_cycles, '>=', 0),
+            TechniqueArgument('Test1_Config', '[integer]', test1_config, '>=', 0),
+            TechniqueArgument('Test1_Value', '[single]', test1_value, '>=', 0),
+            TechniqueArgument('Test2_Config', '[integer]', test2_config, '>=', 0),
+            TechniqueArgument('Test2_Value', '[single]', test2_value, '>=', 0),
+        )
+        super(CPLimit, self).__init__(args, 'cplimit.ecc')
+
+# Section 7.36 in the specification
+class CALimit(Technique):
+    """Chrono-Amperometry (CA) technique class, with limits.
+
+    The CP technique returns data on fields (in order):
+
+    * time (float)
+    * Ewe (float)
+    * I (float)
+    * cycle (int)
+    """
+
+    #: Data fields definition
+    data_fields = {
+        'common': [
+            DataField('Ewe', c_float),
+            DataField('I', c_float),
+            DataField('cycle', c_uint32),
+        ]
+    }
+
+    def __init__(self, current_step=(50E-6,), vs_initial=(False,),
+                 duration_step=(10000,), record_every_dT=0.1, record_every_dE=0.001,
+                 N_cycles=0, test1_config=(5,), test1_value=(1.0e-5,)):
+        """Initialize the CA technique
+
+        NOTE: The current_step, vs_initial and duration_step must be a list or
+        tuple with the same length.
+
+        Limit: stop discharging when the current is lower than a certain value.
+
+        Args:
+            current_step (list): List (or tuple) of floats indicating the
+                current steps (A). See NOTE above.
+            vs_initial (list): List (or tuple) of booleans indicating whether
+                the current steps is vs. the initial one. See NOTE above.
+            duration_step (list): List (or tuple) of floats indicating the
+                duration of each step (s). See NOTE above.
+            record_every_dT (float): Record every dT (s)
+            record_every_dE (float): Record every dE (V)
+            N_cycles (int): The number of times the technique is REPEATED.
+                NOTE: This means that the default value is 0 which means that
+                the technique will be run once.
+
+        Raises:
+            ValueError: On bad lengths for the list arguments
+        """
+        if not len(current_step) == len(vs_initial) == len(duration_step) == len(test1_value):
+            message = 'The length of current_step, vs_initial and '\
+                      'duration_step must be the same'
+            raise ValueError(message)
+
+        args = (
+            TechniqueArgument('Current_step', '[single]', current_step,
+                              None, None),
+            TechniqueArgument('vs_initial', '[bool]', vs_initial,
+                              'in', [True, False]),
+            TechniqueArgument('Duration_step', '[single]', duration_step,
+                              '>=', 0),
+            TechniqueArgument('Step_number', 'integer', len(current_step),
+                              'in', range(99)),
+            TechniqueArgument('Record_every_dT', 'single', record_every_dT,
+                              '>=', 0),
+            TechniqueArgument('Record_every_dE', 'single', record_every_dE,
+                              '>=', 0),
+            TechniqueArgument('N_Cycles', 'integer', N_cycles, '>=', 0),
+            TechniqueArgument('Test1_Config', '[integer]', test1_config, '>=', 0),
+            TechniqueArgument('Test1_Value', '[single]', test1_value, '>=', 0),
+        )
+        super(CALimit, self).__init__(args, 'calimit.ecc')
+
+# Section 7.12 in the specification
+class GEIS(Technique):
+    """Galvanostatic Electrochemical Impedance Spectroscopy (GEIS)
+    technique class
+
+    The GEIS technique returns data with a different set of fields depending
+    on which process steps it is in. If it is in process step 0 it returns
+    data on the following fields (in order):
+
+    * time (float)
+    * Ewe (float)
+    * I (float)
+    * step (int)
+
+    If it is in process 1 it returns data on the following fields:
+
+    * freq (float)
+    * abs_Ewe (float)
+    * abs_I (float)
+    * Phase_Zwe (float)
+    * Ewe (float)
+    * I (float)
+    * abs_Ece (float)
+    * abs_Ice (float)
+    * Phase_Zce (float)
+    * Ece (float)
+    * t (float)
+    * Irange (float)
+    * step (float)
+
+    Which process it is in, can be checked with the ``process`` property on
+    the :class:`.KBIOData` object.
+
+    """
+
+    #:Data fields definition
+    data_fields = {
+        'common': [
+            DataField('Ewe', c_float),
+            DataField('I', c_float),
+            DataField('step', c_uint32),
+        ],
+        'no_time': [
+            DataField('freq', c_float),
+            DataField('abs_Ewe', c_float),
+            DataField('abs_I', c_float),
+            DataField('Phase_Zwe', c_float),
+            DataField('Ewe', c_float),
+            DataField('I', c_float),
+            DataField('Blank0', c_float),
+            DataField('abs_Ece', c_float),
+            DataField('abs_Ice', c_float),
+            DataField('Phase_Zce', c_float),
+            DataField('Ece', c_float),
+            DataField('Blank1', c_float),
+            DataField('Blank2', c_float),
+            DataField('t', c_float),
+            # The manual says this is a float, but playing around with
+            # strongly suggests that it is an uint corresponding to a I_RANGE
+            DataField('Irange', c_uint32),
+            # The manual does not mention data conversion for step, but says
+            # that cycle should be an uint, however, this technique does not
+            # have a cycle field, so I assume that it should have been the
+            # step field. Also, the data maskes sense it you interpret it as
+            # an uint.
+            DataField('step', c_uint32),
+        ]
+    }
+
+    def __init__(self,  # pylint: disable=too-many-locals
+                 vs_initial, vs_final, initial_current_step,
+                 final_current_step, duration_step, step_number,
+                 record_every_dT=0.1, record_every_dI=5E-6,
+                 final_frequency=100.0E3, initial_frequency=100.0,
+                 sweep=False, amplitude_voltage=0.1,
+                 frequency_number=1, average_n_times=1,
+                 correction=False, wait_for_steady=1.0,
+                 I_range='KBIO_IRANGE_AUTO',
+                 E_range='KBIO_ERANGE_2_5', bandwidth='KBIO_BW_5'):
+        """Initialize the SPEIS technique
+
+        Args:
+            vs_initial (bool): Whether the voltage step is vs. the initial one
+            vs_final (bool): Whether the voltage step is vs. the final one
+            initial_step_voltage (float): The initial step voltage (V)
+            final_step_voltage (float): The final step voltage (V)
+            duration_step (float): Duration of step (s)
+            step_number (int): The number of voltage steps
+            record_every_dT (float): Record every dT (s)
+            record_every_dI (float): Record every dI (A)
+            final_frequency (float): The final frequency (Hz)
+            initial_frequency (float): The initial frequency (Hz)
+            sweep (bool): Sweep linear/logarithmic (True for linear points
+                spacing)
+            amplitude_voltage (float): Amplitude of sinus (V)
+            frequency_number (int): The number of frequencies
+            average_n_times (int): The number of repeat times used for
+                frequency averaging
+            correction (bool): Non-stationary correction
+            wait_for_steady (float): The number of periods to wait before each
+                frequency
+            I_Range (str): A string describing the I range, see the
+                :data:`I_RANGES` module variable for possible values
+            E_range (str): A string describing the E range to use, see the
+                :data:`E_RANGES` module variable for possible values
+            Bandwidth (str): A string describing the bandwidth setting, see the
+                :data:`BANDWIDTHS` module variable for possible values
+
+        Raises:
+            ValueError: On bad lengths for the list arguments
+        """
+        args = (
+            TechniqueArgument('vs_initial', 'bool', vs_initial,
+                              'in', [True, False]),
+            TechniqueArgument('vs_final', 'bool', vs_final,
+                              'in', [True, False]),
+            TechniqueArgument('Initial_Current_step', 'single',
+                              initial_current_step, None, None),
+            TechniqueArgument('Final_Current_step', 'single',
+                              final_current_step, None, None),
+            TechniqueArgument('Duration_step', 'single', duration_step,
+                              None, None),
+            TechniqueArgument('Step_number', 'integer', step_number,
+                              'in', range(99)),
+            TechniqueArgument('Record_every_dT', 'single', record_every_dT,
+                              '>=', 0.0),
+            TechniqueArgument('Record_every_dI', 'single', record_every_dI,
+                              '>=', 0.0),
+            TechniqueArgument('Final_frequency', 'single', final_frequency,
+                              '>=', 0.0),
+            TechniqueArgument('Initial_frequency', 'single', initial_frequency,
+                              '>=', 0.0),
+            TechniqueArgument('sweep', 'bool', sweep, 'in', [True, False]),
+            TechniqueArgument('Amplitude_Voltage', 'single', amplitude_voltage,
+                              None, None),
+            TechniqueArgument('Frequency_number', 'integer', frequency_number,
+                              '>=', 1),
+            TechniqueArgument('Average_N_times', 'integer', average_n_times,
+                              '>=', 1),
+            TechniqueArgument('Correction', 'bool', correction,
+                              'in', [True, False]),
+            TechniqueArgument('Wait_for_steady', 'single', wait_for_steady,
+                              '>=', 0.0),
+            TechniqueArgument('I_Range', I_RANGES, I_range,
+                              'in', I_RANGES.values()),
+            TechniqueArgument('E_Range', E_RANGES, E_range,
+                              'in', E_RANGES.values()),
+            TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
+                              BANDWIDTHS.values()),
+        )
+        super(GEIS, self).__init__(args, 'geis.ecc')
+
+
 
 # Section 7.12 in the specification
 class SPEIS(Technique):
@@ -1628,7 +1930,7 @@ class SPEIS(Technique):
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
                               BANDWIDTHS.values()),
         )
-        super(SPEIS, self).__init__(args, 'seisp.ecc')
+        super(SPEIS, self).__init__(args, 'speis.ecc')
 
 
 # Section 7.28 in the specification
@@ -2025,6 +2327,9 @@ TECHNIQUE_IDENTIFIERS_TO_CLASS = {
     'KBIO_TECHID_CV': CV,
     'KBIO_TECHID_CVA': CVA,
     'KBIO_TECHID_SPEIS': SPEIS,
+    'KBIO_TECHID_GEIS': GEIS,
+    'KBIO_TECHID_CPLIMIT': CPLimit,
+    'KBIO_TECHID_CALIMIT': CALimit,
 }
 
 #:List of devices in the WMP4/SP300 series
