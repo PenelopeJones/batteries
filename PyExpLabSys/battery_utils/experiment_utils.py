@@ -28,6 +28,8 @@ def sequence_builder(protocol):
 
     return [cp1_, ca1_, cp2_, ca2_, cp3_, ca3_]
 
+
+
 def cycle_cell(potentiostat, channel, protocol):
     """
 
@@ -51,18 +53,10 @@ def cycle_cell(potentiostat, channel, protocol):
     # TODO: PCA for extracting parameters.
     re_z_discharge, im_z_discharge = measure_eis(potentiostat, channel)
 
-    # Stage 5: Compute the reward received in this cycle
-    reward = reward_function(t_charge, current_capacity, previous_capacity, initial_capacity, cycle_number)
+    observations = [discharge_features, re_z_discharge, im_z_discharge]
 
-    # Stage 6: Calculate the new state from the discharge curve features and the EIS spectrum after discharge
-    # TODO: Write the state function!
-    state = state_function(discharge_features, re_z_discharge, im_z_discharge)
+    return t_charge, current_capacity, observations
 
-    # Stage 6: Compute the next charging protocol
-    # TODO: Write the actor function! Interweave with DDPG now.
-    new_protocol = actor_function(state)
-
-    # Stage 7: Compute the action-value function and evaluate the loss.
 
 
 def reward_function(t_charge, current_capacity, previous_capacity, initial_capacity, cycle_number):
@@ -71,6 +65,7 @@ def reward_function(t_charge, current_capacity, previous_capacity, initial_capac
     extra_penalty = -100.0
     threshold = 0.8
     min_n_cycles = 10
+    stop = False
 
     fast_charge_reward = 1 / t_charge
     degradation_penalty = (current_capacity - previous_capacity) / initial_capacity
@@ -78,12 +73,14 @@ def reward_function(t_charge, current_capacity, previous_capacity, initial_capac
     reward = fast_charge_reward + degradation_penalty
 
     if current_capacity / initial_capacity < threshold:
+        stop = True
+        print('End of life.')
         if cycle_number > min_n_cycles:
             reward += 0
         if cycle_number < min_n_cycles:
             reward += extra_penalty
 
-    return reward
+    return reward, stop
 
 
 # TODO: extract time to charge (time at which the current drops to less than a specified threshold value)
@@ -298,30 +295,6 @@ def charge_cell(potentiostat, channel, protocol):
     except KeyboardInterrupt:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
-
-
-if __name__ == '__main__':
-
-    ip_address = '192.168.0.257'
-    channel = 0
-
-    # Connect to potentiostat
-    mpg2 = MPG2(ip_address)
-
-    # Get basic info
-    basic(mpg2)
-
-    # Test CV on specified channel
-    run_charge(mpg2, channel, protocol)
-
-
-    #current_values()
-    #test_ocv_technique()
-    #test_cp_technique()
-    #test_ca_technique()
-    #test_cva_technique()
-    #test_speis_technique()
-    #test_message()
 
 
 

@@ -26,15 +26,15 @@ def basic(potentiostat):
     print('\n## Device info:')
     pprint(potentiostat.device_info)
 
-    channel_info = potentiostat.get_channel_infos(0)
-    print('\n## Channel 0 info')
+    channel_info = potentiostat.get_channel_infos(7)
+    print('\n## Channel 7 info')
     pprint(channel_info)
 
-    print('\n## Load_firmware:', potentiostat.load_firmware(channels))
+    #print('\n## Load_firmware:', potentiostat.load_firmware(channels))
 
     print('\n## Message left in the queue:')
     while True:
-        msg = potentiostat.get_message(0)
+        msg = potentiostat.get_message(7)
         if msg == '':
             break
         print(msg)
@@ -283,53 +283,54 @@ def test_speis_technique(potentiostat, channel):
         potentiostat.disconnect()
     print('end')
 
-def run_ocv(channel):
+def run_ocv(potentiostat, channel):
     """
     Test technique - find out the IP address of Forse group
     :return:
     """
-    ip_address = '192.168.0.257'
 
     # Connect to potentiostat
-    mpg2 = MPG2(ip_address)
-    mpg2.connect()
+    potentiostat.connect()
 
     # Instantiate the technique. In this case, run OCV as a test
     technique = OCV(rest_time_T=0.2, record_every_dE=10.0, record_every_dT=0.01)
 
     # Load the technique onto desired channel of the potentiostat, and then start it
-    mpg2.load_technique(channel, technique)
-    mpg2.start_channel(channel)
+    potentiostat.load_technique(channel, technique)
+    potentiostat.start_channel(channel)
 
     time.sleep(0.1)
 
     while True:
         # Get currently available data on specified channel
-        data_out = mpg2.get_data(channel)
+        data_out = potentiostat.get_data(channel)
+        print(data_out.technique)
+        print('time:', data_out.time,
+              'numpy', data_out.time_numpy, data_out.time_numpy.dtype)
+        print('I:', data_out.I)
+        print('Ewe:', data_out.Ewe)
 
         if data_out is None:
             break
 
-    mpg2.stop_channel(channel)
-
-
-
+    potentiostat.stop_channel(channel)
 
 
 
 if __name__ == '__main__':
 
-    ip_address = '192.168.0.257'
-    channel = 0
+    ip_address = '10.64.2.150/20'
+    channel = 7
 
     # Connect to potentiostat
     mpg2 = MPG2(ip_address)
 
     # Get basic info
     basic(mpg2)
+    test_ocv_technique(mpg2, channel)
 
     # Test CV on specified channel
-    test_cv_technique(mpg2, channel)
+    #test_cv_technique(mpg2, channel)
     #current_values()
     #test_ocv_technique()
     #test_cp_technique()

@@ -1696,22 +1696,22 @@ class GEIS(Technique):
     }
 
     def __init__(self,  # pylint: disable=too-many-locals
-                 vs_initial, vs_final, initial_current_step,
-                 final_current_step, duration_step, step_number,
+                 vs_initial=False, vs_final=False, initial_current_step=45.0e-3,
+                 final_current_step=45.0e-3, duration_step=1.0, step_number=10,
                  record_every_dT=0.1, record_every_dI=5E-6,
-                 final_frequency=100.0E3, initial_frequency=100.0,
+                 final_frequency=20.0e-3, initial_frequency=20.0e3,
                  sweep=False, amplitude_voltage=0.1,
                  frequency_number=1, average_n_times=1,
                  correction=False, wait_for_steady=1.0,
-                 I_range='KBIO_IRANGE_AUTO',
+                 I_range='KBIO_IRANGE_100mA',
                  E_range='KBIO_ERANGE_2_5', bandwidth='KBIO_BW_5'):
         """Initialize the SPEIS technique
 
         Args:
             vs_initial (bool): Whether the voltage step is vs. the initial one
             vs_final (bool): Whether the voltage step is vs. the final one
-            initial_step_voltage (float): The initial step voltage (V)
-            final_step_voltage (float): The final step voltage (V)
+            initial_step_current (float): The initial step voltage (V)
+            final_step_current (float): The final step voltage (V)
             duration_step (float): Duration of step (s)
             step_number (int): The number of voltage steps
             record_every_dT (float): Record every dT (s)
