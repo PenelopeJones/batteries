@@ -1,8 +1,8 @@
 """Integration tests for the biologic SP-150 driver"""
-import sys
 from __future__ import print_function
 from pprint import pprint
 import time
+import sys
 
 sys.path.append('../')
 from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CP, CA, CV, CVA, SPEIS
