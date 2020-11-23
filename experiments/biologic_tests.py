@@ -321,7 +321,7 @@ def run_ocv(potentiostat, channel):
 
 if __name__ == '__main__':
 
-    ip_address = '10.57.69.181'
+    ip_address = '10.64.0.1'
     channel = 7
 
     # Connect to potentiostat
