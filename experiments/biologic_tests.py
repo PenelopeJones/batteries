@@ -7,6 +7,8 @@ import sys
 sys.path.append('../')
 from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, MPG2
 
+import pdb
+
 
 def basic(potentiostat, channel):
     """ Main method for tests """
@@ -37,10 +39,13 @@ def basic(potentiostat, channel):
 def test_ocv_technique(potentiostat, channel):
     """Test the OCV technique"""
     potentiostat.connect()
+    pdb.set_trace()
     ocv = OCV(rest_time_T=0.2,
               record_every_dE=10.0,
               record_every_dT=0.01)
-    potentiostat.load_technique(channel, ocv)
+    pdb.set_trace()
+    potentiostat.load_technique(channel, ocv, True, True)
+    pdb.set_trace()
     potentiostat.start_channel(channel)
     try:
         time.sleep(0.1)
