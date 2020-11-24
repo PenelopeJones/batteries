@@ -8,7 +8,7 @@ sys.path.append('../')
 from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, MPG2
 
 
-def basic(potentiostat):
+def basic(potentiostat, channel):
     """ Main method for tests """
     print('## Device info before connect:', potentiostat.device_info)
 
@@ -27,18 +27,9 @@ def basic(potentiostat):
     print('\n## Device info:')
     pprint(potentiostat.device_info)
 
-    channel_info = potentiostat.get_channel_infos(7)
-    print('\n## Channel 7 info')
+    channel_info = potentiostat.get_channel_infos(channel)
+    print('\n## Channel {} info'.format(channel))
     pprint(channel_info)
-
-    #print('\n## Load_firmware:', potentiostat.load_firmware(channels))
-
-    print('\n## Message left in the queue:')
-    while True:
-        msg = potentiostat.get_message(7)
-        if msg == '':
-            break
-        print(msg)
 
     potentiostat.disconnect()
     print('\n## Disconnect and test done')
@@ -116,15 +107,10 @@ if __name__ == '__main__':
     # Connect to potentiostat
     mpg2 = MPG2(ip_address)
 
-    print('## Device info before connect:', mpg2.device_info)
-    print('\n## Lib version:', mpg2.get_lib_version())
-    dev_info = mpg2.connect()
-    print('\n## Connect returned device info:')
-    pprint(dev_info)
-    mpg2.disconnect()
-
     # Get basic info
     basic(mpg2)
+
+    # Test OCV technique
     test_ocv_technique(mpg2, channel)
 
     # Test CV on specified channel
