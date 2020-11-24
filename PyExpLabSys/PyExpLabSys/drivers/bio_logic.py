@@ -1086,7 +1086,7 @@ class OCV(Technique):
                 :data:`E_RANGES` module variable for possible values
         """
         args = (
-            TechniqueArgument('Rest_time_T', 'single', rest_time_T, '>=', 0),
+            TechniqueArgument(b'Rest_time_T', 'single', rest_time_T, '>=', 0),
             TechniqueArgument('Record_every_dE', 'single', record_every_dE,
                               '>=', 0),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
