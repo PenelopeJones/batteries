@@ -123,6 +123,8 @@ TechniqueArgument = namedtuple(
 )
 
 
+
+
 ########## Instrument classes
 class GeneralPotentiostat(object):  # pylint: disable=too-many-public-methods
     """General driver for the potentiostats that can be controlled by the
@@ -590,6 +592,22 @@ class GeneralPotentiostat(object):  # pylint: disable=too-many-public-methods
         if error_code < 0:
             message = self.get_error_message(error_code)
             raise ECLibError(message, error_code)
+
+# Implement a new potentiostat
+class MPG2(GeneralPotentiostat):
+    """Specific driver for the MPG2 potentiostat"""
+
+    def __init__(self, address, EClib_dll_path=None):
+        """Initialize the MPG2 potentiostat driver
+
+        See the __init__ method for the GeneralPotentiostat class for an
+        explanation of the arguments.
+        """
+        super(MPG2, self).__init__(
+            type_='KBIO_DEV_MPG2',
+            address=address,
+            EClib_dll_path=EClib_dll_path
+        )
 
 
 class SP150(GeneralPotentiostat):

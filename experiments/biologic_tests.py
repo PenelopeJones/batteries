@@ -5,8 +5,7 @@ import time
 import sys
 
 sys.path.append('../')
-from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CP, CA, CV, CVA, SPEIS
-from PyExpLabSys.battery_utils.potentiostats import MPG2
+from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CP, CA, CV, CVA, SPEIS, MPG2
 
 
 def basic(potentiostat):
