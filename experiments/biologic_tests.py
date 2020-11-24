@@ -106,7 +106,7 @@ def test_cv_technique(potentiostat, channel):
 if __name__ == '__main__':
 
     ip_address = b"10.64.2.254"
-    channel = 7
+    channel = b"7"
 
     print('Connecting...')
     # Connect to potentiostat

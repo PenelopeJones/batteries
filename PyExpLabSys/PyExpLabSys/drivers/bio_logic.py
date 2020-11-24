@@ -1086,12 +1086,12 @@ class OCV(Technique):
                 :data:`E_RANGES` module variable for possible values
         """
         args = (
-            TechniqueArgument('Rest_time_T'.encode('UTF-8'), 'single', rest_time_T, '>=', 0),
-            TechniqueArgument('Record_every_dE'.encode('UTF-8'), 'single', record_every_dE,
+            TechniqueArgument('Rest_time_T', 'single', rest_time_T, '>=', 0),
+            TechniqueArgument('Record_every_dE', 'single', record_every_dE,
                               '>=', 0),
-            TechniqueArgument('Record_every_dT'.encode('UTF-8'), 'single', record_every_dT,
+            TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
-            TechniqueArgument('E_Range'.encode('UTF-8'), E_RANGES, E_range,
+            TechniqueArgument('E_Range', E_RANGES, E_range,
                               'in', E_RANGES.values()),
         )
         super(OCV, self).__init__(args, 'ocv.ecc')
