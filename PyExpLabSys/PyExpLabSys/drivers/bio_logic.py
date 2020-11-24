@@ -1091,7 +1091,7 @@ class OCV(Technique):
                               '>=', 0),
             TechniqueArgument(b'Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
-            TechniqueArgument('E_Range', E_RANGES, E_range,
+            TechniqueArgument(b'E_Range', E_RANGES, E_range,
                               'in', E_RANGES.values()),
         )
         super(OCV, self).__init__(args, 'ocv.ecc')
