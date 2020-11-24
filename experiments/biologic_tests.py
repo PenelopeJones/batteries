@@ -320,7 +320,7 @@ def run_ocv(potentiostat, channel):
 
 if __name__ == '__main__':
 
-    ip_address = '10.64.2.254'
+    ip_address = 171967230
     channel = 7
 
     print('Connecting...')
