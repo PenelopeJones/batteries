@@ -58,6 +58,7 @@ from __future__ import print_function
 import os
 import sys
 import inspect
+import pdb
 from collections import namedtuple
 from ctypes import c_uint8, c_uint32, c_int32
 from ctypes import c_float, c_double, c_char
@@ -407,15 +408,18 @@ class GeneralPotentiostat(object):  # pylint: disable=too-many-public-methods
         else:
             c_technique_file = create_string_buffer(technique.technique_filename.encode('UTF-8')
             )
-
+        pdb.set_trace()
         # Init TECCParams
         c_tecc_params = TECCParams()
         # Get the array of parameter structs
         c_params = technique.c_args(self)
+        pdb.set_trace()
         # Set the len
         c_tecc_params.len = len(c_params)  # pylint:disable=W0201
+        pdb.set_trace()
         p_params = cast(c_params, POINTER(TECCParam))
         c_tecc_params.pParams = p_params  # pylint:disable=W0201,C0103
+        pdb.set_trace()
 
         ret = self._eclib.BL_LoadTechnique(
             self._id,
@@ -426,6 +430,7 @@ class GeneralPotentiostat(object):  # pylint: disable=too-many-public-methods
             last,
             False,
         )
+        pdb.set_trace()
         self.check_eclib_return_code(ret)
 
     def define_bool_parameter(self, label, value, index, tecc_param):
