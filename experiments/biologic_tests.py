@@ -323,8 +323,16 @@ if __name__ == '__main__':
     ip_address = '10.64.2.254'
     channel = 7
 
+    print('Connecting...')
     # Connect to potentiostat
     mpg2 = MPG2(ip_address)
+
+    print('## Device info before connect:', mpg2.device_info)
+    print('\n## Lib version:', mpg2.get_lib_version())
+    dev_info = mpg2.connect()
+    print('\n## Connect returned device info:')
+    pprint(dev_info)
+    mpg2.disconnect()
 
     # Get basic info
     basic(mpg2)
