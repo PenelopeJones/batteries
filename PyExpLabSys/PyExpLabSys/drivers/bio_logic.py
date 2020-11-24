@@ -405,8 +405,7 @@ class GeneralPotentiostat(object):  # pylint: disable=too-many-public-methods
             filename, ext = os.path.splitext(technique.technique_filename)
             c_technique_file = create_string_buffer(filename + '4' + ext)
         else:
-            c_technique_file = create_string_buffer(
-                technique.technique_filename
+            c_technique_file = create_string_buffer(technique.technique_filename.encode('UTF-8')
             )
 
         # Init TECCParams
