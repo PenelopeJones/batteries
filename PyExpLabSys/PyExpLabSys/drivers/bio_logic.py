@@ -1087,9 +1087,9 @@ class OCV(Technique):
         """
         args = (
             TechniqueArgument(b'Rest_time_T', 'single', rest_time_T, '>=', 0),
-            TechniqueArgument('Record_every_dE', 'single', record_every_dE,
+            TechniqueArgument(b'Record_every_dE', 'single', record_every_dE,
                               '>=', 0),
-            TechniqueArgument('Record_every_dT', 'single', record_every_dT,
+            TechniqueArgument(b'Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
             TechniqueArgument('E_Range', E_RANGES, E_range,
                               'in', E_RANGES.values()),
