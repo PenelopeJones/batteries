@@ -108,7 +108,7 @@ if __name__ == '__main__':
     mpg2 = MPG2(ip_address)
 
     # Get basic info
-    basic(mpg2)
+    basic(mpg2, channel)
 
     # Test OCV technique
     test_ocv_technique(mpg2, channel)
