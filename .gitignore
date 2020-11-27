@@ -1,6 +1,6 @@
 /experiments/data/
 /experiments/action_plot.py
-/experiments/eis_pca.py
+/experiments/eis/eis_pca.py
 /EC-Lab Development Package.pdf
 /eclib.py
 /eclib.pyproj

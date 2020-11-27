@@ -190,6 +190,7 @@ class SequentialMemory(Memory):
             state1_batch.append(e.state1)
             reward_batch.append(e.reward)
             action_batch.append(e.action)
+            # terminal_batch is 0 if episode ends after this state, and is 1 if it doesn't
             terminal1_batch.append(0. if e.terminal1 else 1.)
 
         # Prepare and validate parameters.
