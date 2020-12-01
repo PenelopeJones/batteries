@@ -1,14 +1,20 @@
+import os
 import sys
 sys.path.append('../../')
+
 import pandas as pd
 import numpy as np
-
-from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+import torch
+from torch.optim import Adam
+import gpytorch
 from sklearn.preprocessing import StandardScaler
 import matplotlib as mpl
 mpl.rc('font', family='Times New Roman')
 
 from utils.eis_utils import extract_features, plot_setup
+from utils.rl_utils import to_tensor
+from models.gp import ExactGPModel
 
 import pdb
 
@@ -53,14 +59,22 @@ column_map = {
             '08': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity']
             }
 
+# Hyperparameters for the GP
+lr = 0.1
+n_iterations = 500
+
+# We Exact GP Model.
+class ExactGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=train_x.shape[1]))
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 def main():
-
-    # Create figure?
-    #fig, ax = plot_setup(figsize, linewidth, xmin, xmax, ymin, ymax, xticklabels, xticklabels, yticklabels,
-                           #yticklabels, fontsize)
-    #ax.set_xlabel(xlabel, fontsize=fontsize + 1)
-    #ax.set_ylabel(ylabel, fontsize=fontsize + 1)
 
     dir_eis = '../data/eis/'
     dir_cap = '../data/capacity/'
@@ -71,7 +85,9 @@ def main():
     state = 'IX'
     cells = ['01', '02', '03', '04', '05', '06', '07', '08']
     to_train = [True, True, True, True, False, False, False, False]
-    n = 60
+
+    # Number of EIS frequencies
+    nf = 60
 
     X_train = []
     y_train = []
@@ -79,9 +95,11 @@ def main():
     y_test = []
 
     for cell, train in zip(cells, to_train):
+        print('\n\nCell {}'.format(cell))
         file_eis = 'EIS_state_{}_{}C{}.txt'.format(state, T, cell)
         file_cap = 'Data_Capacity_{}C{}.txt'.format(T, cell)
-        label = 'Cell {}'.format(cell, state)
+
+        # Load relevant EIS spectrum and capacities
         df_eis = pd.read_csv(dir_eis + file_eis, delimiter='\t')
         df_cap = pd.read_csv(dir_cap + file_cap, delimiter='\t')
         df_eis.columns = ['time/s', 'cycle number', 'freq', 're_z', '-im_z', 'mod_z', 'phase_z']
@@ -90,25 +108,23 @@ def main():
         X_cell = []
         y_cell = []
 
-        print('\n\nCell {}'.format(cell))
-        for cycle in range(int(df_eis.shape[0] / n)):
-            if cycle % 10 == 0:
-                print('Cycle {}'.format(cycle))
+        for cycle in range(int(df_eis.shape[0] / nf)):
             # Extract 'x' - i.e. relevant features of the EIS spectrum
-            re_z = df_eis['re_z'].loc[cycle*n:int((cycle+1)*n - 1)].to_numpy()
-            im_z = df_eis['-im_z'].loc[cycle*n:int((cycle+1)*n - 1)].to_numpy()
-            log_omega = np.log10(df_eis['freq'].loc[cycle*n:int((cycle+1)*n - 1)].to_numpy())
-            features = extract_features(re_z, im_z, log_omega)
+            re_z = df_eis['re_z'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy()
+            im_z = df_eis['-im_z'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy()
+            log_omega = np.log10(df_eis['freq'].loc[cycle*n:int((cycle+1)*nf - 1)].to_numpy())
+            features = np.hstack([re_z, im_z])
+            #features = extract_features(re_z, im_z, log_omega)
             if features is None:
                 continue
 
             # Extract 'y' - i.e. the capacity after discharge or charge
             if charge_cap:
                 cap = df_cap.loc[(df_cap['ox/red'] == 1) & (df_cap['ox/red'].shift(-1) == 0) &
-                                     (df_cap['cycle number'] == cycle)]['capacity'].to_numpy()
+                                 (df_cap['cycle number'] == cycle)]['capacity'].to_numpy()
             else:
                 cap = df_cap.loc[(df_cap['ox/red'] == 0) & (df_cap['ox/red'].shift(-1) == 1) &
-                                     (df_cap['cycle number'] == cycle)]['capacity'].to_numpy()
+                                 (df_cap['cycle number'] == cycle)]['capacity'].to_numpy()
 
             if cap.shape[0] != 1:
                 continue
@@ -124,15 +140,118 @@ def main():
             X_test.append(np.array(X_cell))
             y_test.append(np.array(y_cell))
 
-    # Training set created
-    y_train = np.hstack(y_train)
+    # Reformat training data (i.e. stack and covert to torch.tensor)
+    y_train = to_tensor(np.hstack(y_train))
     X_train = np.vstack(X_train)
 
-    y_test = np.hstack(y_test)
-    X_test = np.vstack(X_test)
+    # Standardise the data (zero mean, unit variance)
+    scaler = StandardScaler().fit(X_train)
+    X_train = to_tensor(scaler.transform(X_train))
 
-    pdb.set_trace()
-    
+    # Set up the GP model - use Exact GP and Gaussian Likelihood
+    likelihood = gpytorch.likelihoods.GaussianLikelihood()
+    model = ExactGPModel(X_train, y_train, likelihood)
+
+    # Reload partially trained model if it exists
+    if os.path.isfile('model_state.pth'):
+        state_dict = torch.load('model_state.pth')
+        model.load_state_dict(state_dict)
+
+    # Use Adam optimiser for optimising hyperparameters
+    optimiser = Adam(model.parameters(), lr=lr)
+
+    # Loss is the marginal log likelihood
+    mll = gpytorch.mlls.ExactMarginalLogLikelihood(likelihood, model)
+
+    # Train the GP
+    model.train()
+    likelihood.train()
+
+    for i in range(n_iterations):
+        optimiser.zero_grad()
+
+        # Output from model
+        output = model(X_train)
+
+        # Calculate the loss
+        loss = -mll(output, y_train)
+        loss.backward()
+
+        if i % 50 == 0:
+            print('Iteration {}/{} - Loss: {:.3f}'.format(i + 1, n_iterations, loss.item()))
+
+        optimiser.step()
+
+    # Save trained model
+    torch.save(model.state_dict(), 'model_state.pth')
+
+    # Make predictions
+    model.eval()
+    likelihood.eval()
+
+    with torch.no_grad():
+        # First check the predictions on training data
+        predictions = likelihood(model(X_train))
+        mn = predictions.mean
+        var = predictions.variance
+        lower = mn.numpy() - np.sqrt(var.numpy())
+        upper = mn.numpy() + np.sqrt(var.numpy())
+        cycles = np.arange(X_train.shape[0])
+
+        # Initialize plot
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        # Plot training data as black stars
+        ax.scatter(cycles, y_train.numpy(), c='red', label='observed')
+        # Plot predictive means as blue line
+        ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
+        ax.fill_between(cycles, lower, upper, alpha=0.5)
+        plt.savefig('train.png', dpi=400)
+
+
+        for j in range(4):
+            # Make predictions for the 4 test cells - first need to transform the input.
+            y = to_tensor(y_test[j])
+            x = to_tensor(scaler.transform(X_test[j]))
+
+            cycles = np.arange(y.shape[0])
+
+            # Make predictions for y_test
+            predictions = likelihood(model(x))
+            mn = predictions.mean
+            var = predictions.variance
+            lower = mn.numpy() - np.sqrt(var.numpy())
+            upper = mn.numpy() + np.sqrt(var.numpy())
+
+            # Initialize plot
+            fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+            # Plot training data as black stars
+            ax.scatter(cycles, y.numpy(), c='red', label='observed')
+            # Plot predictive means as blue line
+            ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
+            ax.fill_between(cycles, lower, upper, alpha=0.5)
+            plt.savefig('test{}.png'.format(j), dpi=400)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     main()
