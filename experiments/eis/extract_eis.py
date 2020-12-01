@@ -14,39 +14,17 @@ mpl.rc('font', family='Times New Roman')
 
 from utils.eis_utils import extract_features, plot_setup
 from utils.rl_utils import to_tensor
-from models.gp import ExactGPModel
 
-import pdb
-
-color1 = '#2A00FB'
-color2 = '#F18400'
-color3 = 'C2'
-color4 = 'C3'
-fontsize = 24
-alpha = 0.7
-ms = 4
-capsize = 3
-marker = 'o'
-linewidth = 2.0
-figsize = (7, 7)
-#loc = 'upper left'
-#bbox_to_anchor = (0.0, 0.5, 0.3, 0.5)
-loc = 'upper left'
-bbox_to_anchor = (0.0, 0.5, 0.3, 0.5)
-labelspacing = 0.35
-ncol = 2
-handlelength = 1.0
-handletextpad = 0.5
-
-# set up figures
-xmin = 0
-xmax = 3
-ymin = -0.1
-ymax = 0.6
-xticklabels = [xmin, xmax]
-yticklabels = [ymin, ymax]
-xlabel = 'Re (Z) / Ohm'
-ylabel = 'Im (Z) / Ohm'
+# We Exact GP Model.
+class ExactGPModel(gpytorch.models.ExactGP):
+    def __init__(self, train_x, train_y, likelihood):
+        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
+        self.mean_module = gpytorch.means.ConstantMean()
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=train_x.shape[1]))
+    def forward(self, x):
+        mean_x = self.mean_module(x)
+        covar_x = self.covar_module(x)
+        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 column_map = {
             '01': ['time', 'cycle number', 'ox/red', 'capacity'],
@@ -62,17 +40,6 @@ column_map = {
 # Hyperparameters for the GP
 lr = 0.1
 n_iterations = 500
-
-# We Exact GP Model.
-class ExactGPModel(gpytorch.models.ExactGP):
-    def __init__(self, train_x, train_y, likelihood):
-        super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
-        self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=train_x.shape[1]))
-    def forward(self, x):
-        mean_x = self.mean_module(x)
-        covar_x = self.covar_module(x)
-        return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 def main():
 
@@ -200,9 +167,7 @@ def main():
 
         # Initialize plot
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-        # Plot training data as black stars
         ax.scatter(cycles, y_train.numpy(), c='red', label='observed')
-        # Plot predictive means as blue line
         ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
         ax.fill_between(cycles, lower, upper, alpha=0.5)
         plt.savefig('train.png', dpi=400)
@@ -224,33 +189,10 @@ def main():
 
             # Initialize plot
             fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-            # Plot training data as black stars
             ax.scatter(cycles, y.numpy(), c='red', label='observed')
-            # Plot predictive means as blue line
             ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
             ax.fill_between(cycles, lower, upper, alpha=0.5)
             plt.savefig('test{}.png'.format(j), dpi=400)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':
