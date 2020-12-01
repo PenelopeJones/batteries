@@ -15,6 +15,8 @@ mpl.rc('font', family='Times New Roman')
 from utils.eis_utils import extract_features, plot_setup
 from utils.rl_utils import to_tensor
 
+import pdb
+
 # We Exact GP Model.
 class ExactGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
@@ -49,13 +51,17 @@ def main():
     # Whether to predict capacity after charge (True) or after discharge (False)
     charge_cap = False
     T = '25'
-    state = 'IX'
-    cells = ['01', '02', '03', '04', '05', '06', '07', '08']
-    to_train = [True, True, True, True, False, False, False, False]
+    state = 'V'
+    cells = ['01', '02', '03', '04', '05']
+    to_train = [True, True, True, True, False]
 
     # Number of EIS frequencies
     nf = 60
+    # Capacity reduction at which we declare battery dead - typically around 80%
+    boundary = 0.8
 
+
+    # Form the training and test set
     X_train = []
     y_train = []
     X_test = []
@@ -75,13 +81,15 @@ def main():
         X_cell = []
         y_cell = []
 
-        for cycle in range(int(df_eis.shape[0] / nf)):
+        for cycle in range(1, int(df_eis.shape[0] / nf)):
             # Extract 'x' - i.e. relevant features of the EIS spectrum
             re_z = df_eis['re_z'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy()
             im_z = df_eis['-im_z'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy()
-            log_omega = np.log10(df_eis['freq'].loc[cycle*n:int((cycle+1)*nf - 1)].to_numpy())
-            features = np.hstack([re_z, im_z])
-            #features = extract_features(re_z, im_z, log_omega)
+            log_omega = np.log10(df_eis['freq'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy())
+
+            # Either use the concatenation of Re(z) and Im(z) or extract features
+            #features = np.hstack([re_z, im_z])
+            features = extract_features(re_z, im_z, log_omega)
             if features is None:
                 continue
 
@@ -93,11 +101,15 @@ def main():
                 cap = df_cap.loc[(df_cap['ox/red'] == 0) & (df_cap['ox/red'].shift(-1) == 1) &
                                  (df_cap['cycle number'] == cycle)]['capacity'].to_numpy()
 
-            if cap.shape[0] != 1:
-                continue
-            else:
+            if (len(y_cell) > 0) and (cap.shape[0] == 1):
+                if cap[0] < boundary * y_cell[0]:
+                    break
+
+            if cap.shape[0] == 1:
                 X_cell.append(features)
                 y_cell.append(cap[0])
+
+        y_cell /= y_cell[0]
 
         if train:
             X_train.append(np.array(X_cell))
@@ -107,9 +119,11 @@ def main():
             X_test.append(np.array(X_cell))
             y_test.append(np.array(y_cell))
 
-    # Reformat training data (i.e. stack and covert to torch.tensor)
-    y_train = to_tensor(np.hstack(y_train))
+    y_train = np.hstack(y_train)
     X_train = np.vstack(X_train)
+
+    # Reformat training data (i.e. stack and covert to torch.tensor)
+    y_train = to_tensor(y_train)
 
     # Standardise the data (zero mean, unit variance)
     scaler = StandardScaler().fit(X_train)
@@ -178,7 +192,7 @@ def main():
             y = to_tensor(y_test[j])
             x = to_tensor(scaler.transform(X_test[j]))
 
-            cycles = np.arange(y.shape[0])
+            cycles = 2*np.arange(y.shape[0])
 
             # Make predictions for y_test
             predictions = likelihood(model(x))
