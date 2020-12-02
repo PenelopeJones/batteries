@@ -22,7 +22,7 @@ class ExactGPModel(gpytorch.models.ExactGP):
     def __init__(self, train_x, train_y, likelihood):
         super(ExactGPModel, self).__init__(train_x, train_y, likelihood)
         self.mean_module = gpytorch.means.ConstantMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=train_x.shape[1]))
+        self.covar_module = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel())
     def forward(self, x):
         mean_x = self.mean_module(x)
         covar_x = self.covar_module(x)
@@ -41,7 +41,7 @@ column_map = {
 
 # Hyperparameters for the GP
 lr = 0.1
-n_iterations = 500
+n_iterations = 2500
 
 def main():
 
@@ -50,10 +50,10 @@ def main():
 
     # Whether to predict capacity after charge (True) or after discharge (False)
     charge_cap = False
-    T = '25'
+    Ts = ['25', '25', '25', '25', '25', '25', '25', '25']
     state = 'V'
-    cells = ['01', '02', '03', '04', '05']
-    to_train = [True, True, True, True, False]
+    cells = ['01', '02', '03', '04', '05', '06', '07', '08']
+    to_train = [True, True, True, True, True, True, False, False]
 
     # Number of EIS frequencies
     nf = 60
@@ -67,7 +67,7 @@ def main():
     X_test = []
     y_test = []
 
-    for cell, train in zip(cells, to_train):
+    for T, cell, train in zip(Ts, cells, to_train):
         print('\n\nCell {}'.format(cell))
         file_eis = 'EIS_state_{}_{}C{}.txt'.format(state, T, cell)
         file_cap = 'Data_Capacity_{}C{}.txt'.format(T, cell)
@@ -88,8 +88,8 @@ def main():
             log_omega = np.log10(df_eis['freq'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy())
 
             # Either use the concatenation of Re(z) and Im(z) or extract features
-            #features = np.hstack([re_z, im_z])
-            features = extract_features(re_z, im_z, log_omega)
+            features = np.hstack([re_z, im_z])
+            #features = extract_features(re_z, im_z, log_omega)
             if features is None:
                 continue
 
@@ -108,8 +108,6 @@ def main():
             if cap.shape[0] == 1:
                 X_cell.append(features)
                 y_cell.append(cap[0])
-
-        y_cell /= y_cell[0]
 
         if train:
             X_train.append(np.array(X_cell))
@@ -130,13 +128,13 @@ def main():
     X_train = to_tensor(scaler.transform(X_train))
 
     # Set up the GP model - use Exact GP and Gaussian Likelihood
-    likelihood = gpytorch.likelihoods.GaussianLikelihood()
+    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=0.1*torch.ones(X_train.shape[0]))
     model = ExactGPModel(X_train, y_train, likelihood)
 
     # Reload partially trained model if it exists
-    if os.path.isfile('model_state.pth'):
-        state_dict = torch.load('model_state.pth')
-        model.load_state_dict(state_dict)
+    #if os.path.isfile('model_state.pth'):
+    #    state_dict = torch.load('model_state.pth')
+     #   model.load_state_dict(state_dict)
 
     # Use Adam optimiser for optimising hyperparameters
     optimiser = Adam(model.parameters(), lr=lr)
@@ -172,38 +170,47 @@ def main():
 
     with torch.no_grad():
         # First check the predictions on training data
-        predictions = likelihood(model(X_train))
-        mn = predictions.mean
+        predictions = likelihood(model(X_train), noise=0.1*torch.ones(X_train.shape[0]))
+        y = y_train.numpy()
+        y /= y[0]
+        m = predictions.mean
         var = predictions.variance
+        var /= (m[0]**2)
+        mn = m / m[0]
+
         lower = mn.numpy() - np.sqrt(var.numpy())
         upper = mn.numpy() + np.sqrt(var.numpy())
-        cycles = np.arange(X_train.shape[0])
+        cycles = 2*np.arange(X_train.shape[0])
 
         # Initialize plot
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-        ax.scatter(cycles, y_train.numpy(), c='red', label='observed')
+        ax.scatter(cycles, y, c='red', label='observed')
         ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
         ax.fill_between(cycles, lower, upper, alpha=0.5)
         plt.savefig('train.png', dpi=400)
 
 
-        for j in range(4):
+        for j in range(2):
             # Make predictions for the 4 test cells - first need to transform the input.
-            y = to_tensor(y_test[j])
-            x = to_tensor(scaler.transform(X_test[j]))
+            y = y_test[j]
+            y /= y[0]
 
+            x = to_tensor(scaler.transform(X_test[j]))
             cycles = 2*np.arange(y.shape[0])
 
             # Make predictions for y_test
-            predictions = likelihood(model(x))
-            mn = predictions.mean
+            predictions = likelihood(model(x), noise=0.1*torch.ones(x.shape[0]))
+            m = predictions.mean
             var = predictions.variance
+            var /= (m[0]**2)
+            mn = m / m[0]
+
             lower = mn.numpy() - np.sqrt(var.numpy())
             upper = mn.numpy() + np.sqrt(var.numpy())
 
             # Initialize plot
             fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-            ax.scatter(cycles, y.numpy(), c='red', label='observed')
+            ax.scatter(cycles, y, c='red', label='observed')
             ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
             ax.fill_between(cycles, lower, upper, alpha=0.5)
             plt.savefig('test{}.png'.format(j), dpi=400)
