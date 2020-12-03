@@ -7,8 +7,6 @@ import sys
 sys.path.append('../')
 from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, MPG2
 
-import pdb
-
 
 def basic(potentiostat, channel):
     """ Main method for tests """
@@ -68,7 +66,6 @@ def test_ocv_technique(potentiostat, channel):
 
 def test_cv_technique(potentiostat, channel):
     """Test the CV technique"""
-    import matplotlib.pyplot as plt
     potentiostat.connect()
     cv_ = CV(vs_initial=(True,) * 5,
              voltage_step=(0.0, 0.5, -0.7, 0.0, 0.0),
@@ -98,8 +95,6 @@ def test_cv_technique(potentiostat, channel):
     else:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
-    plt.plot(ew_, ii_)
-    plt.show()
     print('end')
 
 
@@ -117,4 +112,4 @@ if __name__ == '__main__':
     basic(mpg2, channel)
 
     # Test OCV technique
-    test_ocv_technique(mpg2, channel)
+    test_cv_technique(mpg2, channel)
