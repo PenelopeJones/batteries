@@ -177,8 +177,6 @@ class CALimit(Technique):
         super(CALimit, self).__init__(args, 'calimit.ecc')
 
 
-
-
 # Section 7.3 in the specification
 class ModularPulse(Technique):
     """Modular Pulse (MP) technique class.

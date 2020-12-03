@@ -2,7 +2,8 @@
 # pylint: disable=too-many-lines,star-args,too-many-arguments,
 # pylint: disable=too-many-public-methods,
 
-"""This module is a Python implementation of a driver around the
+"""
+This module is a Python implementation of a driver around the
 EC-lib DLL. It can be used to control at least the SP-150 potentiostat
 from Bio-Logic under 32 bit Windows.
 
@@ -54,7 +55,7 @@ from Bio-Logic under 32 bit Windows.
 
 """
 
-from __future__ import print_function
+
 import os
 import sys
 import inspect
@@ -406,7 +407,8 @@ class GeneralPotentiostat(object):
             filename, ext = os.path.splitext(technique.technique_filename)
             c_technique_file = create_string_buffer(filename + '4' + ext)
         else:
-            c_technique_file = create_string_buffer(technique.technique_filename)
+            c_technique_file = create_string_buffer(technique.technique_filename.encode('UTF-8')
+            )
         # Init TECCParams
         c_tecc_params = TECCParams()
         # Get the array of parameter structs
@@ -1086,7 +1088,7 @@ class OCV(Technique):
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
         )
         super(OCV, self).__init__(args, 'ocv.ecc')
 
@@ -1184,11 +1186,11 @@ class CV(Technique):
             TechniqueArgument('End_measuring_I', 'single', end_measuring_I,
                               'in_float_range', (0.0, 1.0)),
             TechniqueArgument('I_Range', I_RANGES, I_range,
-                              'in', I_RANGES.values()),
+                              'in', list(I_RANGES.values())),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
-                              BANDWIDTHS.values()),
+                              list(BANDWIDTHS.values())),
         )
         super(CV, self).__init__(args, 'cv.ecc')
 
@@ -1324,11 +1326,11 @@ class CVA(Technique):
             TechniqueArgument('Trig_on_off', 'bool', trig_on_off,
                               'in', [True, False]),
             TechniqueArgument('I_Range', I_RANGES, I_range,
-                              'in', I_RANGES.values()),
+                              'in', list(I_RANGES.values())),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
-                              BANDWIDTHS.values()),
+                              list(BANDWIDTHS.values())),
         )
         super(CVA, self).__init__(args, 'biovscan.ecc')
 
@@ -1399,18 +1401,18 @@ class CP(Technique):
             TechniqueArgument('Duration_step', '[single]', duration_step,
                               '>=', 0),
             TechniqueArgument('Step_number', 'integer', len(current_step),
-                              'in', range(99)),
+                              'in', list(range(99))),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
             TechniqueArgument('Record_every_dE', 'single', record_every_dE,
                               '>=', 0),
             TechniqueArgument('N_Cycles', 'integer', N_cycles, '>=', 0),
             TechniqueArgument('I_Range', I_RANGES, I_range,
-                              'in', I_RANGES.values()),
+                              'in', list(I_RANGES.values())),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth,
-                              'in', BANDWIDTHS.values()),
+                              'in', list(BANDWIDTHS.values())),
         )
         super(CP, self).__init__(args, 'cp.ecc')
 
@@ -1479,18 +1481,18 @@ class CA(Technique):
             TechniqueArgument('Duration_step', '[single]', duration_step,
                               '>=', 0.0),
             TechniqueArgument('Step_number', 'integer', len(voltage_step),
-                              'in', range(99)),
+                              'in', list(range(99))),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0.0),
             TechniqueArgument('Record_every_dI', 'single', record_every_dI,
                               '>=', 0.0),
             TechniqueArgument('N_Cycles', 'integer', N_cycles, '>=', 0),
             TechniqueArgument('I_Range', I_RANGES, I_range,
-                              'in', I_RANGES.values()),
+                              'in', list(I_RANGES.values())),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
-                              BANDWIDTHS.values()),
+                              list(BANDWIDTHS.values())),
         )
         super(CA, self).__init__(args, 'ca.ecc')
 
@@ -1558,7 +1560,7 @@ class CPLimit(Technique):
             TechniqueArgument('Duration_step', '[single]', duration_step,
                               '>=', 0),
             TechniqueArgument('Step_number', 'integer', len(current_step),
-                              'in', range(99)),
+                              'in', list(range(99))),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
             TechniqueArgument('Record_every_dE', 'single', record_every_dE,
@@ -1631,7 +1633,7 @@ class CALimit(Technique):
             TechniqueArgument('Duration_step', '[single]', duration_step,
                               '>=', 0),
             TechniqueArgument('Step_number', 'integer', len(current_step),
-                              'in', range(99)),
+                              'in', list(range(99))),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0),
             TechniqueArgument('Record_every_dE', 'single', record_every_dE,
@@ -1765,7 +1767,7 @@ class GEIS(Technique):
             TechniqueArgument('Duration_step', 'single', duration_step,
                               None, None),
             TechniqueArgument('Step_number', 'integer', step_number,
-                              'in', range(99)),
+                              'in', list(range(99))),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0.0),
             TechniqueArgument('Record_every_dI', 'single', record_every_dI,
@@ -1786,11 +1788,11 @@ class GEIS(Technique):
             TechniqueArgument('Wait_for_steady', 'single', wait_for_steady,
                               '>=', 0.0),
             TechniqueArgument('I_Range', I_RANGES, I_range,
-                              'in', I_RANGES.values()),
+                              'in', list(I_RANGES.values())),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
-                              BANDWIDTHS.values()),
+                              list(BANDWIDTHS.values())),
         )
         super(GEIS, self).__init__(args, 'geis.ecc')
 
@@ -1919,7 +1921,7 @@ class SPEIS(Technique):
             TechniqueArgument('Duration_step', 'single', duration_step,
                               None, None),
             TechniqueArgument('Step_number', 'integer', step_number,
-                              'in', range(99)),
+                              'in', list(range(99))),
             TechniqueArgument('Record_every_dT', 'single', record_every_dT,
                               '>=', 0.0),
             TechniqueArgument('Record_every_dI', 'single', record_every_dI,
@@ -1940,11 +1942,11 @@ class SPEIS(Technique):
             TechniqueArgument('Wait_for_steady', 'single', wait_for_steady,
                               '>=', 0.0),
             TechniqueArgument('I_Range', I_RANGES, I_range,
-                              'in', I_RANGES.values()),
+                              'in', list(I_RANGES.values())),
             TechniqueArgument('E_Range', E_RANGES, E_range,
-                              'in', E_RANGES.values()),
+                              'in', list(E_RANGES.values())),
             TechniqueArgument('Bandwidth', BANDWIDTHS, bandwidth, 'in',
-                              BANDWIDTHS.values()),
+                              list(BANDWIDTHS.values())),
         )
         super(SPEIS, self).__init__(args, 'speis.ecc')
 
@@ -2156,7 +2158,7 @@ def structure_to_dict(structure):
 
 def reverse_dict(dict_):
     """Reverse the key/value status of a dict"""
-    return dict([[v, k] for k, v in dict_.items()])
+    return dict([[v, k] for k, v in list(dict_.items())])
 
 
 ########## Constants

@@ -39,13 +39,15 @@ def basic(potentiostat, channel):
 def test_ocv_technique(potentiostat, channel):
     """Test the OCV technique"""
     potentiostat.connect()
-    pdb.set_trace()
+    print('Successfully connected to potentiostat.')
+
     ocv = OCV(rest_time_T=0.2,
               record_every_dE=10.0,
               record_every_dT=0.01)
-    pdb.set_trace()
+
     potentiostat.load_technique(channel, ocv, True, True)
-    pdb.set_trace()
+    print('Technique loaded.')
+
     potentiostat.start_channel(channel)
     try:
         time.sleep(0.1)
@@ -62,8 +64,7 @@ def test_ocv_technique(potentiostat, channel):
     else:
         potentiostat.stop_channel(channel)
         potentiostat.disconnect()
-
-
+        print('Disconnected from potentiostat.')
 
 def test_cv_technique(potentiostat, channel):
     """Test the CV technique"""
@@ -105,8 +106,8 @@ def test_cv_technique(potentiostat, channel):
 
 if __name__ == '__main__':
 
-    ip_address = b"10.64.2.254"
-    channel = b"7"
+    ip_address = "10.64.2.254"
+    channel = "7"
 
     print('Connecting...')
     # Connect to potentiostat
@@ -117,6 +118,3 @@ if __name__ == '__main__':
 
     # Test OCV technique
     test_ocv_technique(mpg2, channel)
-
-    # Test CV on specified channel
-    #test_cv_technique(mpg2, channel)
