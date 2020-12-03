@@ -41,9 +41,9 @@ def test_ocv_technique(potentiostat, channel):
     potentiostat.connect()
     print('Successfully connected to potentiostat.')
 
-    ocv = OCV(rest_time_T=0.2,
+    ocv = OCV(rest_time_T=10.0,
               record_every_dE=10.0,
-              record_every_dT=0.01)
+              record_every_dT=0.1)
 
     potentiostat.load_technique(channel, ocv, True, True)
     print('Technique loaded.')
