@@ -2351,7 +2351,7 @@ TECHNIQUE_IDENTIFIERS_TO_CLASS = {
 #:List of devices in the WMP4/SP300 series
 SP300SERIES = [
     'KBIO_DEV_SP100', 'KBIO_DEV_SP200', 'KBIO_DEV_SP300', 'KBIO_DEV_VSP300',
-    'KBIO_DEV_VMP300', 'KBIO_DEV_SP240'
+    'KBIO_DEV_VMP300', 'KBIO_DEV_SP240', 'KBIO_DEV_MPG2'
 ]
 
 # Hack to make links for classes in the documentation
