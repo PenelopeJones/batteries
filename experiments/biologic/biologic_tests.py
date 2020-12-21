@@ -4,7 +4,7 @@ from pprint import pprint
 import time
 import sys
 
-sys.path.append('../')
+sys.path.append('../../')
 from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, MPG2
 
 import pdb
