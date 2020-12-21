@@ -7,6 +7,7 @@ import sys
 sys.path.append('../')
 from PyExpLabSys.PyExpLabSys.drivers.bio_logic import OCV, CV, MPG2
 
+import pdb
 
 def basic(potentiostat, channel):
     """ Main method for tests """
@@ -110,6 +111,8 @@ if __name__ == '__main__':
 
     # Get basic info
     basic(mpg2, channel)
+
+    pdb.set_trace()
 
     # Test OCV technique
     test_cv_technique(mpg2, channel)

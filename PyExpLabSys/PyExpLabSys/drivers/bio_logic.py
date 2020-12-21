@@ -415,7 +415,7 @@ class GeneralPotentiostat(object):
         c_tecc_params.len = len(c_params)  # pylint:disable=W0201
         p_params = cast(c_params, POINTER(TECCParam))
         c_tecc_params.pParams = p_params  # pylint:disable=W0201,C0103
-
+        pdb.set_trace()
         ret = self._eclib.BL_LoadTechnique(
             self._id,
             channel,
@@ -425,6 +425,7 @@ class GeneralPotentiostat(object):
             last,
             False,
         )
+        pdb.set_trace()
         self.check_eclib_return_code(ret)
 
     def define_bool_parameter(self, label, value, index, tecc_param):
@@ -2351,7 +2352,7 @@ TECHNIQUE_IDENTIFIERS_TO_CLASS = {
 #:List of devices in the WMP4/SP300 series
 SP300SERIES = [
     'KBIO_DEV_SP100', 'KBIO_DEV_SP200', 'KBIO_DEV_SP300', 'KBIO_DEV_VSP300',
-    'KBIO_DEV_VMP300', 'KBIO_DEV_SP240', 'KBIO_DEV_MPG2'
+    'KBIO_DEV_VMP300', 'KBIO_DEV_SP240'
 ]
 
 # Hack to make links for classes in the documentation
