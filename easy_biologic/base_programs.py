@@ -284,13 +284,13 @@ class CallBack_Timeout:
         
         # internal trackers
         self.__calls += 1
-        if self.timeout_type is 'interval':
+        if self.timeout_type == 'interval':
             self.__last_call = time.time()
         
         # callback
         cb( self.__program, *args, **kwargs )
         
-        if self.timeout_type is 'between':
+        if self.timeout_type == 'between':
             self.__last_call = time.time()
         
         
@@ -1133,7 +1133,7 @@ class PEIS( BiologicProgram ):
                         None,
                         None
                     )  
-                elif segment.info.ProcessIndex is 1:
+                elif segment.info.ProcessIndex == 1:
                     f = (
                         segment.info.ProcessIndex,
                         datum.time,
