@@ -39,13 +39,18 @@ def test_ocv_technique(potentiostat, channel):
     """Test the OCV technique"""
     potentiostat.connect()
     print('Successfully connected to potentiostat.')
-
+    pdb.set_trace()
     ocv = OCV(rest_time_T=10.0,
               record_every_dE=10.0,
               record_every_dT=0.1)
 
-    potentiostat.load_technique(channel, ocv, True, True)
+    pdb.set_trace()
+
+    potentiostat.load_technique(channel, ocv)
+
     print('Technique loaded.')
+
+    pdb.set_trace()
 
     potentiostat.start_channel(channel)
     try:
@@ -68,13 +73,12 @@ def test_ocv_technique(potentiostat, channel):
 def test_cv_technique(potentiostat, channel):
     """Test the CV technique"""
     potentiostat.connect()
-    cv_ = CV(vs_initial=(True,) * 5,
-             voltage_step=(0.0, 0.5, -0.7, 0.0, 0.0),
-             scan_rate=(10.0,) * 5,
-             record_every_dE=0.01,
-             N_cycles=3)
+    pdb.set_trace()
+    cv_ = CV(vs_initial=[True, True, True, True, True],
+             voltage_step=[0.0, 0.5, -0.7, 0.0, 0.0],
+             scan_rate=[10.0, 10.0, 10.0, 10.0, 10.0])
     potentiostat.load_technique(channel, cv_)
-
+    pdb.set_trace()
     potentiostat.start_channel(channel)
     ew_ = []
     ii_ = []
@@ -99,7 +103,6 @@ def test_cv_technique(potentiostat, channel):
     print('end')
 
 
-
 if __name__ == '__main__':
 
     ip_address = "10.64.2.254"
@@ -115,4 +118,6 @@ if __name__ == '__main__':
     pdb.set_trace()
 
     # Test OCV technique
-    test_cv_technique(mpg2, channel)
+    test_ocv_technique(mpg2, channel)
+
+    pdb.set_trace()

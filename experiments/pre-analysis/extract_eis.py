@@ -9,6 +9,7 @@ import torch
 from torch.optim import Adam
 import gpytorch
 from sklearn.preprocessing import StandardScaler
+from scipy.optimize import curve_fit
 import matplotlib as mpl
 mpl.rc('font', family='Times New Roman')
 
@@ -16,6 +17,10 @@ from utils.eis_utils import extract_features, plot_setup
 from utils.rl_utils import to_tensor
 
 import pdb
+
+def general_sigmoid(x, a, b, c):
+    return a / (1.0 + np.exp(b*(x-c)))
+
 
 # We Exact GP Model.
 class ExactGPModel(gpytorch.models.ExactGP):
@@ -29,19 +34,24 @@ class ExactGPModel(gpytorch.models.ExactGP):
         return gpytorch.distributions.MultivariateNormal(mean_x, covar_x)
 
 column_map = {
-            '01': ['time', 'cycle number', 'ox/red', 'capacity'],
-            '02': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1', 'nan2', 'nan3'],
-            '03': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1'],
-            '04': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1'],
-            '05': ['time', 'cycle number', 'ox/red', 'capacity', 'nan1'],
-            '06': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1', 'nan2'],
-            '07': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1'],
-            '08': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity']
+            '0125': ['time', 'cycle number', 'ox/red', 'capacity'],
+            '0225': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1', 'nan2', 'nan3'],
+            '0325': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1'],
+            '0425': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1'],
+            '0525': ['time', 'cycle number', 'ox/red', 'capacity', 'nan1'],
+            '0625': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1', 'nan2'],
+            '0725': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity', 'nan1'],
+            '0825': ['time', 'cycle number', 'ox/red', 'ewe', 'i', 'capacity'],
+            '0135': ['time', 'cycle number', 'ox/red', 'capacity'],
+            '0235': ['time', 'cycle number', 'ox/red', 'capacity'],
+            '0145': ['time', 'cycle number', 'ox/red', 'capacity'],
+            '0245': ['time', 'cycle number', 'ox/red', 'capacity']
             }
 
 # Hyperparameters for the GP
 lr = 0.1
 n_iterations = 2500
+fixed_noise = 25.0
 
 def main():
 
@@ -50,10 +60,10 @@ def main():
 
     # Whether to predict capacity after charge (True) or after discharge (False)
     charge_cap = False
-    Ts = ['25', '25', '25', '25', '25', '25', '25', '25']
+    Ts = ['25', '25', '25', '25', '25', '25']
     state = 'V'
-    cells = ['01', '02', '03', '04', '05', '06', '07', '08']
-    to_train = [True, True, True, True, True, True, False, False]
+    cells = ['02', '03', '04', '06', '07', '08']
+    to_train = [True, True, True, True, False, False]
 
     # Number of EIS frequencies
     nf = 60
@@ -75,11 +85,16 @@ def main():
         # Load relevant EIS spectrum and capacities
         df_eis = pd.read_csv(dir_eis + file_eis, delimiter='\t')
         df_cap = pd.read_csv(dir_cap + file_cap, delimiter='\t')
-        df_eis.columns = ['time/s', 'cycle number', 'freq', 're_z', '-im_z', 'mod_z', 'phase_z']
-        df_cap.columns = column_map[cell]
 
+        df_eis.columns = ['time/s', 'cycle number', 'freq', 're_z', '-im_z', 'mod_z', 'phase_z']
+        df_cap.columns = column_map[cell + T]
         X_cell = []
         y_cell = []
+
+        capacities = []
+        cycles = []
+
+        life = 2.0*int(df_eis.shape[0] / nf)
 
         for cycle in range(1, int(df_eis.shape[0] / nf)):
             # Extract 'x' - i.e. relevant features of the EIS spectrum
@@ -88,8 +103,8 @@ def main():
             log_omega = np.log10(df_eis['freq'].loc[cycle*nf:int((cycle+1)*nf - 1)].to_numpy())
 
             # Either use the concatenation of Re(z) and Im(z) or extract features
-            features = np.hstack([re_z, im_z])
-            #features = extract_features(re_z, im_z, log_omega)
+            #features = np.hstack([re_z, im_z])
+            features = extract_features(re_z, im_z, log_omega)
             if features is None:
                 continue
 
@@ -101,13 +116,34 @@ def main():
                 cap = df_cap.loc[(df_cap['ox/red'] == 0) & (df_cap['ox/red'].shift(-1) == 1) &
                                  (df_cap['cycle number'] == cycle)]['capacity'].to_numpy()
 
-            if (len(y_cell) > 0) and (cap.shape[0] == 1):
-                if cap[0] < boundary * y_cell[0]:
+            if (len(capacities) > 0) and (cap.shape[0] == 1):
+                if cap[0] < boundary * capacities[0]:
+                    life = 2.0 * cycle
                     break
 
             if cap.shape[0] == 1:
-                X_cell.append(features)
-                y_cell.append(cap[0])
+                # Extract features of the discharge curve
+                t_min = df_cap.loc[(df_cap['ox/red'] == 1) & (df_cap['ox/red'].shift(-1) == 0) &
+                                   (df_cap['cycle number'] == cycle)]['time'].to_numpy()
+                t_min = t_min[0]
+                t_max = df_cap.loc[(df_cap['ox/red'] == 0) & (df_cap['ox/red'].shift(-1) == 1) &
+                                   (df_cap['cycle number'] == cycle)]['time'].to_numpy()
+                t_max = t_max[0]
+                df_cycle = df_cap.loc[(df_cap['time'] >= t_min) & (df_cap['time'] <= t_max)]
+                time = df_cycle['time'].to_numpy() - t_min
+                capacity = df_cycle['capacity'].to_numpy()
+                voltage = df_cycle['ewe'].to_numpy()
+                popt, pcov = curve_fit(general_sigmoid, voltage[1:], capacity[1:])
+
+                X_cell.append(np.hstack([popt, features]))
+                cycles.append(2.0 * cycle)
+                capacities.append(cap[0])
+                #y_cell.append(cap[0])
+
+        cycles = np.array(cycles)
+
+        # Remaining useful life (RUL) is the value to be predicted
+        y_cell = life - cycles
 
         if train:
             X_train.append(np.array(X_cell))
@@ -128,7 +164,7 @@ def main():
     X_train = to_tensor(scaler.transform(X_train))
 
     # Set up the GP model - use Exact GP and Gaussian Likelihood
-    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=0.1*torch.ones(X_train.shape[0]))
+    likelihood = gpytorch.likelihoods.FixedNoiseGaussianLikelihood(noise=fixed_noise*torch.ones(X_train.shape[0]))
     model = ExactGPModel(X_train, y_train, likelihood)
 
     # Reload partially trained model if it exists
@@ -170,50 +206,43 @@ def main():
 
     with torch.no_grad():
         # First check the predictions on training data
-        predictions = likelihood(model(X_train), noise=0.1*torch.ones(X_train.shape[0]))
+        predictions = likelihood(model(X_train), noise=fixed_noise*torch.ones(X_train.shape[0]))
         y = y_train.numpy()
-        y /= y[0]
-        m = predictions.mean
+        mn = predictions.mean
         var = predictions.variance
-        var /= (m[0]**2)
-        mn = m / m[0]
 
         lower = mn.numpy() - np.sqrt(var.numpy())
         upper = mn.numpy() + np.sqrt(var.numpy())
-        cycles = 2*np.arange(X_train.shape[0])
 
         # Initialize plot
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-        ax.scatter(cycles, y, c='red', label='observed')
-        ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
-        ax.fill_between(cycles, lower, upper, alpha=0.5)
-        plt.savefig('train.png', dpi=400)
-
+        ax.scatter(y, mn.numpy(), c='blue', label='mean')
+        ax.fill_between(y, lower, upper, alpha=0.5)
+        ax.set_xlabel('Actual RUL')
+        ax.set_ylabel('Predicted RUL')
+        plt.savefig('train_rul_discharge_x.png', dpi=400)
 
         for j in range(2):
             # Make predictions for the 4 test cells - first need to transform the input.
             y = y_test[j]
-            y /= y[0]
 
             x = to_tensor(scaler.transform(X_test[j]))
-            cycles = 2*np.arange(y.shape[0])
 
             # Make predictions for y_test
-            predictions = likelihood(model(x), noise=0.1*torch.ones(x.shape[0]))
-            m = predictions.mean
+            predictions = likelihood(model(x), noise=fixed_noise*torch.ones(x.shape[0]))
+            mn = predictions.mean
             var = predictions.variance
-            var /= (m[0]**2)
-            mn = m / m[0]
 
             lower = mn.numpy() - np.sqrt(var.numpy())
             upper = mn.numpy() + np.sqrt(var.numpy())
 
             # Initialize plot
             fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-            ax.scatter(cycles, y, c='red', label='observed')
-            ax.scatter(cycles, mn.numpy(), c='blue', label='mean')
-            ax.fill_between(cycles, lower, upper, alpha=0.5)
-            plt.savefig('test{}.png'.format(j), dpi=400)
+            ax.scatter(y, mn.numpy(), c='blue', label='mean')
+            ax.fill_between(y, lower, upper, alpha=0.5)
+            ax.set_xlabel('Actual RUL')
+            ax.set_ylabel('Predicted RUL')
+            plt.savefig('test{}_rul_discharge_x.png'.format(j), dpi=400)
 
 
 if __name__ == '__main__':

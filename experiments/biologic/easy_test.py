@@ -5,6 +5,8 @@ sys.path.append('../')
 import easy_biologic as ebl
 import easy_biologic.base_programs as blp
 
+import pdb
+
 # Set up the device to connect to
 
 ip_address = "10.64.2.254"
@@ -15,9 +17,13 @@ params = {'time_interval': 1.0,
 
 potentiostat = ebl.BiologicDevice(ip_address)
 
+pdb.set_trace()
+
 print('Connecting...')
 
 potentiostat.connect()
+
+pdb.set_trace()
 
 print('Connected.')
 
