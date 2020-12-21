@@ -167,7 +167,7 @@ class BiologicDevice:
             )
             
         except EcError as err:
-            if err.value is -9:
+            if err.value == -9:
                 # ECLab firmware loaded
                 pass
         
@@ -247,7 +247,7 @@ class BiologicDevice:
             # not connected
             raise RuntimeError( 'Device not connected.')
         
-        first = ( index is 0 )
+        first = ( index == 0 )
         
         if types is not None:
             params = ecl.cast_parameters( params, types )
@@ -547,7 +547,7 @@ class BiologicDeviceAsync:
             )
             
         except EcError as err:
-            if err.value is -9:
+            if err.value == -9:
                 # ECLab firmware loaded
                 pass
         
@@ -617,7 +617,7 @@ class BiologicDeviceAsync:
             # not connected
             raise RuntimeError( 'Device not connected.')
         
-        first = ( index is 0 )
+        first = ( index == 0 )
         
         if types is not None:
             params = await ecl.cast_parameters_async( params, types )

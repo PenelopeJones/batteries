@@ -1019,10 +1019,10 @@ class PEIS( BiologicProgram ):
         """
         # set sweep to false if spacing is logarithmic
         if 'sweep' in params:
-            if params.sweep is 'log':
+            if params.sweep == 'log':
                 params.sweep = False 
 
-            elif params.sweep is 'lin':
+            elif params.sweep == 'lin':
                 params.sweep = True
 
             else: 
@@ -1113,7 +1113,7 @@ class PEIS( BiologicProgram ):
                 """
                 Define fields for _run function.
                 """
-                if segment.info.ProcessIndex is 0:
+                if segment.info.ProcessIndex == 0:
                     f = (
                         segment.info.ProcessIndex,
                         dp.calculate_time(
@@ -1458,7 +1458,7 @@ class MPP_Tracking( CALimit ):
             
             self.__append_data( hold_segments ) # add data
             
-            if len( self.active_channels ) is 0:
+            if len( self.active_channels ) ==0:
                 # program end
                 break
                 
@@ -1475,7 +1475,7 @@ class MPP_Tracking( CALimit ):
             
             self.__append_data( probe_segments ) # add data
             
-            if len( self.active_channels ) is 0:
+            if len( self.active_channels ) ==0:
                 # program end
                 break
     
