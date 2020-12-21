@@ -118,6 +118,6 @@ if __name__ == '__main__':
     pdb.set_trace()
 
     # Test OCV technique
-    test_ocv_technique(mpg2, channel)
+    test_cv_technique(mpg2, channel)
 
     pdb.set_trace()
