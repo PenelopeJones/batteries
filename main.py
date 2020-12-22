@@ -9,6 +9,8 @@ import sys;
 import time;
 import threading;
 
+import pdb
+
 
 # Configuration
 cfg_conn_ip = "10.64.2.254";
@@ -114,7 +116,7 @@ def thread_debug(reserved):
         time.sleep(0.25);
 
 
-# Experiment tread routine
+# Experiment thread routine
 def thread_experiment(reserved):
     global glob_firmware_loaded;
     global glob_stop;
@@ -212,11 +214,15 @@ def thread_experiment(reserved):
 def main():
     # treads 
     threads = {}
+    pdb.set_trace()
     threads["experiment"] = threading.Thread(target=thread_experiment, args=(0,));
     threads["debug"] = threading.Thread(target=thread_debug, args=(0,));
+    pdb.set_trace()
     # starting threads
     threads["experiment"].start();
+    pdb.set_trace()
     threads["debug"].start();
+    pdb.set_trace()
     # loop
     while not glob_stop:
         time.sleep(1);

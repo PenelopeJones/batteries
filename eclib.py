@@ -8,12 +8,11 @@ import ctypes;
 
 # ECLIB class
 class eclib(object):
-
     # Constants
     UNITS_NB = 16;
 
     # EC-Lab DLL (private)
-    __dll = ctypes.WinDLL("..\\..\\EC-Lab Development Package\\EClib64.dll");
+    __dll = ctypes.WinDLL("C:\EC-Lab Development Package\\EClib64.dll");
 
     # Device Info Structure
     class DeviceInfoType(ctypes.Structure):
@@ -94,7 +93,6 @@ class eclib(object):
         PARAM_BOOLEAN = 1;
         PARAM_SINGLE = 2;
 
-
     # ErrorCode BL_ConvertNumericIntoSingle(int num, ref float psgl)
     BL_ConvertNumericIntoSingle = __dll["BL_ConvertNumericIntoSingle"];
     BL_ConvertNumericIntoSingle.restype = ctypes.c_int;
@@ -102,12 +100,13 @@ class eclib(object):
     # ErrorCode BL_Connect(string server, byte timeout, ref int connection_id, ref DeviceInfo pInfos)
     BL_Connect = __dll["BL_Connect"];
     BL_Connect.restype = ctypes.c_int;
-    
+
     # ErrorCode BL_TestConnection(int ID)
     BL_TestConnection = __dll["BL_TestConnection"];
     BL_TestConnection.restype = ctypes.c_int;
 
-    # ErrorCode BL_LoadFirmware(int ID, byte[] pChannels, int[] pResults, byte Length, bool ShowGauge, bool ForceReload, string BinFile, string XlxFile)
+    # ErrorCode BL_LoadFirmware(int ID, byte[] pChannels, int[] pResults, byte Length, bool ShowGauge,
+    # bool ForceReload, string BinFile, string XlxFile)
     BL_LoadFirmware = __dll["BL_LoadFirmware"];
     BL_LoadFirmware.restype = ctypes.c_int;
 
@@ -123,7 +122,8 @@ class eclib(object):
     BL_GetMessage = __dll["BL_GetMessage"];
     BL_GetMessage.restype = ctypes.c_int;
 
-    # ErrorCode BL_LoadTechnique(int ID, byte channel, string pFName, EccParams pparams, bool FirstTechnique, bool LastTechnique, bool DisplayParams)
+    # ErrorCode BL_LoadTechnique(int ID, byte channel, string pFName, EccParams pparams, bool FirstTechnique,
+    # bool LastTechnique, bool DisplayParams)
     BL_LoadTechnique = __dll["BL_LoadTechnique"];
     BL_LoadTechnique.restype = ctypes.c_int;
 
@@ -139,6 +139,7 @@ class eclib(object):
     BL_StartChannel = __dll["BL_StartChannel"];
     BL_StartChannel.restype = ctypes.c_int;
 
-    # ErrorCode BL_GetData(int ID, byte channel, [MarshalAs(UnmanagedType.LPArray, SizeConst=1000)] int[] buf, ref DataInfos pInfos, ref CurrentValues pValues)
+    # ErrorCode BL_GetData(int ID, byte channel, [MarshalAs(UnmanagedType.LPArray, SizeConst=1000)] int[] buf,
+    # ref DataInfos pInfos, ref CurrentValues pValues)
     BL_GetData = __dll["BL_GetData"];
     BL_GetData.restype = ctypes.c_int;
