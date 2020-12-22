@@ -11,9 +11,9 @@ import threading;
 
 
 # Configuration
-cfg_conn_ip = "10.10.1.130";
+cfg_conn_ip = "10.64.2.254";
 cfg_conn_timeout = 10;
-cfg_channel = 0;
+cfg_channel = 7;
 cfg_debug_enabled = False;
 
 # exit codes
@@ -180,7 +180,7 @@ def thread_experiment(reserved):
 
     # Load technique
     glob_eclib_mutex.acquire();
-    error = eclib.BL_LoadTechnique(glob_conn_id, ctypes.c_ubyte(cfg_channel), "ocv4.ecc", EccParams, True, True, True);
+    error = eclib.BL_LoadTechnique(glob_conn_id, ctypes.c_ubyte(cfg_channel), "ocv.ecc", EccParams, True, True, True);
     log("BL_LoadTechnique: " + str(error));
     glob_eclib_mutex.release();
     if error != eclib.ErrorCodeEnum.ERR_NOERROR:
